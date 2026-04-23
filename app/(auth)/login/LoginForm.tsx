@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [devLoading, setDevLoading] = useState<"dev" | "guest" | null>(null);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const supabase = createClient();
 
@@ -19,7 +22,7 @@ export function LoginForm() {
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${location.origin}/` },
+      options: { emailRedirectTo: `${location.origin}/auth/callback` },
     });
 
     if (error) {
@@ -28,6 +31,48 @@ export function LoginForm() {
       setSent(true);
     }
     setLoading(false);
+  }
+
+  async function handleSeed() {
+    setDevLoading("dev");
+    setError("");
+    try {
+      const res = await fetch("/api/dev/seed", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "seed failed");
+      alert(`シード完了！ users:${json.users} tasks:${json.tasks} completions:${json.completions}`);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "シードに失敗しました");
+    } finally {
+      setDevLoading(null);
+    }
+  }
+
+  async function handleQuickLogin(role: "dev" | "guest") {
+    setDevLoading(role);
+    setError("");
+    try {
+      const res = await fetch("/api/dev/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      const { email: loginEmail, password, error: apiError } = await res.json();
+      if (apiError) throw new Error(apiError);
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password,
+      });
+      if (signInError) throw new Error(signInError.message);
+
+      router.push("/");
+      router.refresh();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "ログインに失敗しました");
+    } finally {
+      setDevLoading(null);
+    }
   }
 
   if (sent) {
@@ -65,6 +110,41 @@ export function LoginForm() {
       <Button type="submit" loading={loading} className="w-full">
         ログインリンクを送る
       </Button>
+
+      {process.env.NODE_ENV === "development" && (
+        <div className="pt-2 border-t border-dashed border-gray-200 space-y-2">
+          <p className="text-xs text-gray-400 text-center">開発環境専用</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("dev")}
+              disabled={devLoading !== null}
+              className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-colors"
+            >
+              {devLoading === "dev" ? "..." : "⚙️ Dev"}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("guest")}
+              disabled={devLoading !== null}
+              className="rounded-lg border border-purple-300 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 disabled:opacity-50 transition-colors"
+            >
+              {devLoading === "guest" ? "..." : "👤 Guest"}
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 text-center">
+            同じ部屋・別ユーザーで動作確認できます
+          </p>
+          <button
+            type="button"
+            onClick={handleSeed}
+            disabled={devLoading !== null}
+            className="w-full rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors"
+          >
+            {devLoading !== null ? "..." : "🌱 ダミーデータ投入"}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

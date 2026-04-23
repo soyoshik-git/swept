@@ -13,6 +13,11 @@ export default async function TaskDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
   const { data: task } = await supabase
     .from("tasks")
     .select("*")
@@ -20,6 +25,19 @@ export default async function TaskDetailPage({
     .single();
 
   if (!task) notFound();
+
+  const { data: member } = await supabase
+    .from("users")
+    .select("room_id")
+    .eq("id", user.id)
+    .single();
+
+  const { data: roomMembers } = await supabase
+    .from("users")
+    .select("id, name")
+    .eq("room_id", member?.room_id ?? "");
+
+  const members = (roomMembers ?? []).map((m) => ({ id: m.id, name: m.name }));
 
   async function handleUpdate(data: CreateTaskInput) {
     "use server";
@@ -38,6 +56,7 @@ export default async function TaskDetailPage({
       <Card className="p-4">
         <TaskForm
           initialValues={task}
+          members={members}
           onSubmit={handleUpdate}
           submitLabel="保存する"
         />

@@ -1,7 +1,9 @@
 export type Room = {
   id: string;
   name: string;
+  code: string | null;
   line_group_id: string | null;
+  bonus_multiplier_max: number;
   created_at: string;
 };
 
@@ -10,6 +12,7 @@ export type User = {
   room_id: string | null;
   name: string;
   line_user_id: string | null;
+  avatar_url: string | null;
   created_at: string;
 };
 
@@ -78,10 +81,16 @@ export type UpdateTaskInput = Partial<CreateTaskInput> & {
 
 export type Stats = MonthlyStat & {
   user: User;
+  task_count: number;
 };
 
 export type DashboardData = {
   monthlyStats: Stats[];
   tasks: (Task & { last_completed_at: string | null; stale_days: number })[];
   recentCompletions: (Completion & { task: Task; user: User })[];
+  completionCount: number;  // 自分の今月完了数
+  myTotalPoint: number;     // 自分の今月獲得ポイント
+  myPenaltyCount: number;   // 自分の今月ペナルティ回数
+  myRank: number;           // 今月のランキング順位（0=データなし）
+  overdueCount: number;
 };

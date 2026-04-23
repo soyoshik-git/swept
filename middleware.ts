@@ -31,12 +31,14 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // 未認証 → ログインページへ（invite・API・認証ページは除く）
+  // 未認証 → ログインページへ（invite・API・auth callback・認証ページは除く）
   if (
     !user &&
     !pathname.startsWith("/login") &&
     !pathname.startsWith("/invite") &&
-    !pathname.startsWith("/api")
+    !pathname.startsWith("/api") &&
+    !pathname.startsWith("/auth") &&
+    !pathname.startsWith("/setup")
   ) {
     return NextResponse.redirect(new URL("/login", request.url));
   }

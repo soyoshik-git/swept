@@ -1,94 +1,82 @@
 import { createClient } from "@/lib/supabase/server";
-import { createInviteToken } from "@/actions/rooms";
-import { Card, CardHeader } from "@/components/ui/Card";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { ProfileSection } from "@/components/settings/ProfileSection";
+import { RoomSection } from "@/components/settings/RoomSection";
+import { InviteSection } from "@/components/settings/InviteSection";
+import { NotificationSection } from "@/components/settings/NotificationSection";
+import { TaskSettingsSection } from "@/components/settings/TaskSettingsSection";
+import { AppInfoSection } from "@/components/settings/AppInfoSection";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
+  // ユーザー・ルーム情報
   const { data: member } = await supabase
     .from("users")
-    .select("*, room:rooms(name)")
-    .eq("id", user!.id)
+    .select("*, room:rooms(name, code, line_group_id, bonus_multiplier_max)")
+    .eq("id", user.id)
     .single();
 
+  // メンバー一覧
   const { data: roomMembers } = await supabase
     .from("users")
     .select("id, name")
     .eq("room_id", member?.room_id ?? "");
 
-  async function handleLogout() {
-    "use server";
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-    redirect("/login");
-  }
+  // 累計ポイント・完了数
+  const { data: allStats } = await supabase
+    .from("monthly_stats")
+    .select("net_point")
+    .eq("user_id", user.id);
+  const totalPoint = (allStats ?? []).reduce((sum, s) => sum + (s.net_point ?? 0), 0);
 
-  async function handleCreateInvite() {
-    "use server";
-    const token = await createInviteToken();
-    redirect(`/settings?invited=${token}`);
-  }
+  const { count: completionCount } = await supabase
+    .from("completions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  const room = member?.room as {
+    name?: string;
+    code?: string;
+    line_group_id?: string | null;
+    bonus_multiplier_max?: number;
+  } | null;
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const protocol = host.startsWith("localhost") ? "http" : "https";
+  const origin = `${protocol}://${host}`;
+
+  const members = (roomMembers ?? []).map((m) => ({
+    id: m.id,
+    name: m.name,
+    isMe: m.id === user.id,
+  }));
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-lg font-bold text-gray-900">設定</h1>
-
-      {/* ルーム情報 */}
-      <Card>
-        <CardHeader title="ルーム" />
-        <div className="px-4 py-3 space-y-3">
-          <div>
-            <p className="text-xs text-gray-400">ルーム名</p>
-            <p className="text-sm font-medium text-gray-900">
-              {member?.room?.name ?? "未設定"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400 mb-1">メンバー</p>
-            <ul className="space-y-1">
-              {(roomMembers ?? []).map((m) => (
-                <li key={m.id} className="text-sm text-gray-700">
-                  {m.name}
-                  {m.id === user!.id && (
-                    <span className="ml-1 text-xs text-gray-400">（あなた）</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <form action={handleCreateInvite}>
-            <button
-              type="submit"
-              className="w-full rounded-lg border border-blue-200 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors"
-            >
-              招待リンクを生成
-            </button>
-          </form>
-        </div>
-      </Card>
-
-      {/* アカウント */}
-      <Card>
-        <CardHeader title="アカウント" />
-        <div className="px-4 py-3 space-y-3">
-          <div>
-            <p className="text-xs text-gray-400">メールアドレス</p>
-            <p className="text-sm text-gray-700">{user!.email}</p>
-          </div>
-          <form action={handleLogout}>
-            <button
-              type="submit"
-              className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              ログアウト
-            </button>
-          </form>
-        </div>
-      </Card>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-lg font-bold text-foreground">設定</h1>
+        <ProfileSection
+          userName={member?.name ?? ""}
+          avatarUrl={member?.avatar_url ?? null}
+          totalPoint={totalPoint}
+          completionCount={completionCount ?? 0}
+        />
+        <RoomSection
+          roomName={room?.name ?? ""}
+          members={members}
+        />
+        <InviteSection
+          roomCode={room?.code ?? ""}
+          origin={origin}
+        />
+        <NotificationSection lineGroupId={room?.line_group_id ?? null} />
+        <TaskSettingsSection bonusMultiplierMax={room?.bonus_multiplier_max ?? 2.0} />
+        <AppInfoSection />
     </div>
   );
 }

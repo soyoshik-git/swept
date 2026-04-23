@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { usePathname } from "next/navigation";
 import { completeTask } from "@/actions/completions";
 import { getStaleBadgeVariant, formatStaleDays } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
@@ -14,9 +15,13 @@ type Task = {
 };
 
 export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [completingId, setCompletingId] = useState<string | null>(null);
+
+  // 設定ページでは非表示
+  if (pathname.startsWith("/settings")) return null;
 
   function handleComplete(taskId: string) {
     setCompletingId(taskId);

@@ -1,5 +1,5 @@
 import { getMonthlyStats } from "@/actions/stats";
-import { Card, CardHeader } from "@/components/ui/Card";
+import { Card, CardHeaderCompat as CardHeader } from "@/components/ui/Card";
 
 export default async function StatsPage() {
   const now = new Date();

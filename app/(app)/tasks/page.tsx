@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
-import { Card, CardHeader } from "@/components/ui/Card";
+import { Card, CardHeaderCompat as CardHeader } from "@/components/ui/Card";
 import { getStaleBadgeVariant, formatStaleDays } from "@/lib/utils";
 
 export default async function TasksPage() {

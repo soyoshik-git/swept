@@ -5,14 +5,18 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import type { CreateTaskInput, Task } from "@/types/database";
 
+type Member = { id: string; name: string };
+
 type Props = {
   initialValues?: Partial<Task>;
+  members?: Member[];
   onSubmit: (data: CreateTaskInput) => Promise<unknown>;
   submitLabel?: string;
 };
 
 export function TaskForm({
   initialValues,
+  members = [],
   onSubmit,
   submitLabel = "保存",
 }: Props) {
@@ -29,10 +33,24 @@ export function TaskForm({
   const [isFixedAssign, setIsFixedAssign] = useState(
     initialValues?.is_fixed_assign ?? false,
   );
+  const [assignedUserId, setAssignedUserId] = useState(
+    initialValues?.assigned_user_id ?? "",
+  );
+
+  function handleFixedAssignChange(checked: boolean) {
+    setIsFixedAssign(checked);
+    if (!checked) setAssignedUserId("");
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (isFixedAssign && !assignedUserId) {
+      setError("固定担当タスクの場合、担当者を選択してください");
+      return;
+    }
+
     startTransition(async () => {
       try {
         await onSubmit({
@@ -41,6 +59,7 @@ export function TaskForm({
           base_point: basePoint,
           frequency_days: frequencyDays,
           is_fixed_assign: isFixedAssign,
+          assigned_user_id: isFixedAssign ? assignedUserId : undefined,
         });
         router.push("/tasks");
       } catch (err) {
@@ -105,15 +124,42 @@ export function TaskForm({
         </div>
       </div>
 
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={isFixedAssign}
-          onChange={(e) => setIsFixedAssign(e.target.checked)}
-          className="rounded border-gray-300"
-        />
-        <span className="text-sm text-gray-700">固定担当タスク</span>
-      </label>
+      {/* 固定担当 */}
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isFixedAssign}
+            onChange={(e) => handleFixedAssignChange(e.target.checked)}
+            className="rounded border-gray-300"
+          />
+          <span className="text-sm text-gray-700">固定担当タスク</span>
+        </label>
+
+        {isFixedAssign && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              担当者 <span className="text-red-500">*</span>
+            </label>
+            {members.length === 0 ? (
+              <p className="text-xs text-gray-400">メンバーが見つかりません</p>
+            ) : (
+              <select
+                value={assignedUserId}
+                onChange={(e) => setAssignedUserId(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="">担当者を選択してください</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+      </div>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 

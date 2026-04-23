@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { submitNgVote } from "@/actions/ng-votes";
-import { Card, CardHeader } from "@/components/ui/Card";
+import { Card, CardHeaderCompat as CardHeader } from "@/components/ui/Card";
 import { formatDate } from "@/lib/utils";
 
 export default async function CompletionsPage() {
