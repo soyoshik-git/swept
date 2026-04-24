@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 
@@ -10,17 +11,20 @@ function generateRoomCode(): string {
 
 /** 新しいルームを作成してユーザーを所属させる */
 export async function setupCreateRoom(name: string): Promise<void> {
+  // 認証確認は通常クライアントで
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
+  // RLS をバイパスするために admin クライアントを使用
+  const admin = createAdminClient();
+
   // ユニークなコードを生成
   let code = generateRoomCode();
   for (let i = 0; i < 10; i++) {
-    const { data: dup } = await supabase
+    const { data: dup } = await admin
       .from("rooms")
       .select("id")
       .eq("code", code)
@@ -29,7 +33,7 @@ export async function setupCreateRoom(name: string): Promise<void> {
     code = generateRoomCode();
   }
 
-  const { data: room, error: roomError } = await supabase
+  const { data: room, error: roomError } = await admin
     .from("rooms")
     .insert({ name: name.trim(), code })
     .select("id")
@@ -37,7 +41,7 @@ export async function setupCreateRoom(name: string): Promise<void> {
   if (roomError) throw new Error(roomError.message);
 
   // users レコードを upsert（初回ログイン時はレコードがない）
-  const { error: userError } = await supabase.from("users").upsert(
+  const { error: userError } = await admin.from("users").upsert(
     { id: user.id, room_id: room.id, name: user.email?.split("@")[0] ?? "メンバー" },
     { onConflict: "id" },
   );
@@ -49,13 +53,14 @@ export async function setupCreateRoom(name: string): Promise<void> {
 /** コードで既存ルームに参加 */
 export async function joinRoomByCode(code: string): Promise<void> {
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
-  const { data: room } = await supabase
+  const admin = createAdminClient();
+
+  const { data: room } = await admin
     .from("rooms")
     .select("id, name")
     .eq("code", code.trim())
@@ -63,7 +68,7 @@ export async function joinRoomByCode(code: string): Promise<void> {
 
   if (!room) throw new Error("ルームが見つかりません。コードを確認してください。");
 
-  const { error } = await supabase.from("users").upsert(
+  const { error } = await admin.from("users").upsert(
     { id: user.id, room_id: room.id, name: user.email?.split("@")[0] ?? "メンバー" },
     { onConflict: "id" },
   );
