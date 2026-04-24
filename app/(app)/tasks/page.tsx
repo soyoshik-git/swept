@@ -34,12 +34,8 @@ export default async function TasksPage() {
         .limit(1)
         .maybeSingle();
 
-      const staleDays = last
-        ? Math.floor(
-            (now.getTime() - new Date(last.completed_at).getTime()) /
-              86400000,
-          )
-        : 999;
+      const baseDateMs = new Date(last?.completed_at ?? task.created_at).getTime();
+      const staleDays = Math.floor((now.getTime() - baseDateMs) / 86400000);
 
       return { ...task, stale_days: staleDays };
     }),
