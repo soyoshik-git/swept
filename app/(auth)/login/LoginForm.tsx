@@ -5,9 +5,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
-const DEV_LOGIN_ENABLED =
-  process.env.NODE_ENV === "development" ||
-  process.env.NEXT_PUBLIC_DEV_LOGIN_ENABLED === "true";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -117,8 +114,7 @@ export function LoginForm() {
         ログインリンクを送る
       </Button>
 
-      {DEV_LOGIN_ENABLED && (
-        <div className="pt-2 border-t border-dashed border-gray-200">
+      <div className="pt-2 border-t border-dashed border-gray-200">
           <button
             type="button"
             onClick={() => setDevOpen((v) => !v)}
@@ -156,8 +152,7 @@ export function LoginForm() {
               </button>
             </div>
           )}
-        </div>
-      )}
+      </div>
     </form>
   );
 }
