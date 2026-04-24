@@ -46,7 +46,7 @@ export default async function AppLayout({
                 alt="Swept"
                 width={36}
                 height={36}
-                className="object-contain"
+                className="object-contain mix-blend-multiply"
               />
               <div>
                 <h1 className="text-base font-bold text-foreground leading-tight">

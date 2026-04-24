@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { calcFinalPoint, calcStaleMultiplier } from "@/lib/points";
 import {
   buildCompletionMessage,
@@ -78,6 +79,39 @@ export async function completeTask(taskId: string): Promise<Completion> {
     .single();
 
   if (error) throw new Error(error.message);
+
+  // monthly_stats を更新（RLSなしで直接書き込み）
+  const admin = createAdminClient();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  const { data: existingStat } = await admin
+    .from("monthly_stats")
+    .select("id, total_point, penalty_pt, net_point")
+    .eq("room_id", member.room_id)
+    .eq("user_id", authUser.id)
+    .eq("year", year)
+    .eq("month", month)
+    .maybeSingle();
+
+  if (existingStat) {
+    const newTotal = (existingStat.total_point ?? 0) + finalPoint;
+    const penaltyPt = existingStat.penalty_pt ?? 0;
+    await admin
+      .from("monthly_stats")
+      .update({ total_point: newTotal, net_point: newTotal - penaltyPt })
+      .eq("id", existingStat.id);
+  } else {
+    await admin.from("monthly_stats").insert({
+      room_id: member.room_id,
+      user_id: authUser.id,
+      year,
+      month,
+      total_point: finalPoint,
+      penalty_pt: 0,
+      net_point: finalPoint,
+    });
+  }
 
   // LINE通知（失敗してもエラーにしない）
   const lineGroupId = task.room?.line_group_id;
