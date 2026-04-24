@@ -59,7 +59,7 @@ async function ensureUser(
 }
 
 export async function POST(request: Request) {
-  if (process.env.NODE_ENV !== "development") {
+  if (process.env.DEV_LOGIN_ENABLED !== "true") {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 

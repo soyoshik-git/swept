@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
+const DEV_LOGIN_ENABLED =
+  process.env.NODE_ENV === "development" ||
+  process.env.NEXT_PUBLIC_DEV_LOGIN_ENABLED === "true";
+
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -75,6 +79,8 @@ export function LoginForm() {
     }
   }
 
+  const [devOpen, setDevOpen] = useState(false);
+
   if (sent) {
     return (
       <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 text-center">
@@ -111,38 +117,45 @@ export function LoginForm() {
         ログインリンクを送る
       </Button>
 
-      {process.env.NODE_ENV === "development" && (
-        <div className="pt-2 border-t border-dashed border-gray-200 space-y-2">
-          <p className="text-xs text-gray-400 text-center">開発環境専用</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("dev")}
-              disabled={devLoading !== null}
-              className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-colors"
-            >
-              {devLoading === "dev" ? "..." : "⚙️ Dev"}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("guest")}
-              disabled={devLoading !== null}
-              className="rounded-lg border border-purple-300 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 disabled:opacity-50 transition-colors"
-            >
-              {devLoading === "guest" ? "..." : "👤 Guest"}
-            </button>
-          </div>
-          <p className="text-xs text-gray-400 text-center">
-            同じ部屋・別ユーザーで動作確認できます
-          </p>
+      {DEV_LOGIN_ENABLED && (
+        <div className="pt-2 border-t border-dashed border-gray-200">
           <button
             type="button"
-            onClick={handleSeed}
-            disabled={devLoading !== null}
-            className="w-full rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors"
+            onClick={() => setDevOpen((v) => !v)}
+            className="w-full text-xs text-gray-300 hover:text-gray-400 py-1 transition-colors"
           >
-            {devLoading !== null ? "..." : "🌱 ダミーデータ投入"}
+            {devOpen ? "▲ 開発用" : "▼ 開発用"}
           </button>
+          {devOpen && (
+            <div className="mt-2 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin("dev")}
+                  disabled={devLoading !== null}
+                  className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-colors"
+                >
+                  {devLoading === "dev" ? "..." : "⚙️ Dev"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin("guest")}
+                  disabled={devLoading !== null}
+                  className="rounded-lg border border-purple-300 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 disabled:opacity-50 transition-colors"
+                >
+                  {devLoading === "guest" ? "..." : "👤 Guest"}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleSeed}
+                disabled={devLoading !== null}
+                className="w-full rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors"
+              >
+                {devLoading !== null ? "..." : "🌱 ダミーデータ投入"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </form>

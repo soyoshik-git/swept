@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST() {
-  if (process.env.NODE_ENV !== "development") {
+  if (process.env.DEV_LOGIN_ENABLED !== "true") {
     return NextResponse.json({ error: "dev only" }, { status: 403 });
   }
 
