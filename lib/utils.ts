@@ -23,6 +23,11 @@ export function formatStaleDays(staleDays: number): string {
   return `${staleDays}日放置`;
 }
 
+/** ポイント表示用（DB値をそのまま返す） */
+export function displayPt(pt: number | null | undefined): number {
+  return pt ?? 0;
+}
+
 /** 日時フォーマット */
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("ja-JP", {
