@@ -2,12 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { calcFinalPoint, calcStaleMultiplier } from "@/lib/points";
-import {
-  buildCompletionMessage,
-  pushMessage,
-} from "@/lib/line";
 import { revalidatePath } from "next/cache";
+import { calcFinalPoint, calcStaleMultiplier } from "@/lib/points";
+import { buildCompletionMessage, pushMessage } from "@/lib/line";
 import type { Completion } from "@/types/database";
 
 export async function completeTask(taskId: string): Promise<Completion> {
@@ -122,5 +119,78 @@ export async function completeTask(taskId: string): Promise<Completion> {
 
   revalidatePath("/");
   revalidatePath("/completions");
+  revalidatePath("/activity");
   return completion;
+}
+
+/** 自分の完了を取り消す */
+export async function undoCompletion(completionId: string): Promise<void> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const admin = createAdminClient();
+
+  const { data: completion } = await admin
+    .from("completions")
+    .select("user_id, final_point, completed_at, task:tasks(room_id)")
+    .eq("id", completionId)
+    .single();
+
+  if (!completion) throw new Error("完了記録が見つかりません");
+  if (completion.user_id !== user.id) throw new Error("自分の完了記録のみ取り消せます");
+
+  // monthly_stats を差し引き
+  const completedAt = new Date(completion.completed_at);
+  const year = completedAt.getFullYear();
+  const month = completedAt.getMonth() + 1;
+  const roomId = (completion.task as unknown as { room_id: string } | null)?.room_id;
+
+  if (roomId && completion.final_point) {
+    const { data: stat } = await admin
+      .from("monthly_stats")
+      .select("id, total_point, penalty_pt")
+      .eq("user_id", user.id)
+      .eq("room_id", roomId)
+      .eq("year", year)
+      .eq("month", month)
+      .maybeSingle();
+
+    if (stat) {
+      const newTotal = Math.max(0, (stat.total_point ?? 0) - completion.final_point);
+      await admin
+        .from("monthly_stats")
+        .update({ total_point: newTotal, net_point: newTotal - (stat.penalty_pt ?? 0) })
+        .eq("id", stat.id);
+    }
+  }
+
+  await admin.from("completions").delete().eq("id", completionId);
+
+  revalidatePath("/");
+  revalidatePath("/activity");
+}
+
+/** 他人の完了に NG を出す */
+export async function voteNG(completionId: string): Promise<void> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data: existing } = await supabase
+    .from("ng_votes")
+    .select("id")
+    .eq("completion_id", completionId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (existing) throw new Error("すでに NG を出しています");
+
+  const { error } = await supabase
+    .from("ng_votes")
+    .insert({ completion_id: completionId, user_id: user.id, voted_at: new Date().toISOString() });
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+  revalidatePath("/activity");
 }

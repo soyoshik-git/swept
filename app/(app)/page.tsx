@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 import { getDashboardData, getWeeklySchedule } from "@/actions/stats";
 import { TaskOverview } from "@/components/dashboard/TaskOverview";
 import { RoommateStats } from "@/components/dashboard/RoommateStats";
@@ -7,6 +8,9 @@ import { NeglectedTasks } from "@/components/dashboard/NeglectedTasks";
 import { WeeklySchedule } from "@/components/dashboard/WeeklySchedule";
 
 export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   const [data, weeklySchedule] = await Promise.all([
     getDashboardData(),
     getWeeklySchedule(),
@@ -63,7 +67,7 @@ export default async function DashboardPage() {
       )}
 
       {/* アクティビティ */}
-      <RecentActivity completions={data.recentCompletions} />
+      <RecentActivity completions={data.recentCompletions} currentUserId={user?.id} />
     </div>
   );
 }
