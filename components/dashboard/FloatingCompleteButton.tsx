@@ -9,11 +9,13 @@ import { getStaleBadgeVariant, formatStaleDays } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { overlay, slideUp, sheetSpring, softSpring, fastFade } from "@/lib/animate";
 import { displayPt } from "@/lib/utils";
+import { TaskMemoButton } from "@/components/tasks/TaskMemoButton";
 
 type Task = {
   id: string;
   name: string;
   space: string | null;
+  memo: string | null;
   stale_days: number;
   frequency_days: number;
   base_point: number;
@@ -148,8 +150,11 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
                                 onClick={() => handleSelect(task)}
                                 className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
                               >
-                                <div className="text-left flex-1 min-w-0">
+                                <div className="text-left flex-1 min-w-0 flex items-center gap-1.5">
                                   <p className="text-sm font-medium text-gray-900">{task.name}</p>
+                                  {task.memo && (
+                                    <TaskMemoButton memo={task.memo} taskName={task.name} />
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
                                   <span className="text-xs font-bold text-primary">+{displayPt(task.base_point)}pt</span>
