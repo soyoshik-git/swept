@@ -9,6 +9,7 @@ export type ScheduleTask = {
   space: string | null;
   base_point: number;
   frequency_days: number;
+  weekdays: number[];   // [] = 頻度タスク、非空 = 曜日タスク
   stale_days: number;
   last_completed_at: string | null;
   created_at: string;
@@ -141,7 +142,7 @@ export async function getWeeklySchedule(): Promise<WeeklyScheduleData> {
   // タスク一覧を取得
   const { data: tasksRaw } = await supabase
     .from("tasks")
-    .select("id, name, space, base_point, frequency_days, is_fixed_assign, assigned_user_id, created_at")
+    .select("id, name, space, base_point, frequency_days, weekdays, is_fixed_assign, assigned_user_id, created_at")
     .eq("room_id", member.room_id)
     .eq("is_active", true);
 
@@ -187,6 +188,7 @@ export async function getWeeklySchedule(): Promise<WeeklyScheduleData> {
       space: task.space,
       base_point: task.base_point,
       frequency_days: task.frequency_days,
+      weekdays: weekdays,
       stale_days: staleDays,
       last_completed_at: lastAt,
       created_at: task.created_at,

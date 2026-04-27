@@ -54,6 +54,18 @@ function calcDueDate(lastCompletedAt: string | null, createdAt: string, frequenc
   return localDateStr(due);
 }
 
+/** 曜日タスクが指定日に表示されるべきか */
+function isWeekdayTaskForDate(weekdays: number[], date: Date): boolean {
+  return weekdays.includes(date.getDay());
+}
+
+/** 曜日タスクが指定日に完了済みか（weekCompletion の日付で判定） */
+function isWeekdayTaskCompletedOnDate(taskId: string, dateStr: string, weekCompletions: WeekCompletion[]): boolean {
+  return weekCompletions.some(
+    (c) => c.task_id === taskId && localDateStr(new Date(c.completed_at)) === dateStr
+  );
+}
+
 function getWeekDates(): Date[] {
   const today = new Date();
   const day = today.getDay();
@@ -116,32 +128,44 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
   // 選択日に表示するタスクを計算
   const { pendingTasks, completedTasksForDay } = useMemo(() => {
     if (isToday) {
-      // 今日：期限日が今日以前のタスク
-      const dueTasks = tasksWithDueDate.filter((t) => t.due_date <= todayStr);
+      // 今日：頻度タスク（期限日が今日以前）＋ 曜日タスク（今日が指定曜日）
+      const allDueTasks = tasksWithDueDate.filter((t) =>
+        t.weekdays.length > 0
+          ? isWeekdayTaskForDate(t.weekdays, selectedDate)
+          : t.due_date <= todayStr
+      );
+      // 曜日タスクはその日の完了記録で判定、頻度タスクは allCompletedIds で判定
+      const isDoneForDay = (t: TaskWithDueDate) =>
+        t.weekdays.length > 0
+          ? isWeekdayTaskCompletedOnDate(t.id, todayStr, weekCompletions) || localCompletedIds.has(t.id)
+          : allCompletedIds.has(t.id);
+
       return {
-        pendingTasks: dueTasks
-          .filter((t) => !allCompletedIds.has(t.id))
+        pendingTasks: allDueTasks
+          .filter((t) => !isDoneForDay(t))
           .sort((a, b) => {
             if (a.is_mine !== b.is_mine) return a.is_mine ? -1 : 1;
             return b.stale_days - a.stale_days;
           }),
-        completedTasksForDay: dueTasks.filter((t) => allCompletedIds.has(t.id)),
+        completedTasksForDay: allDueTasks.filter((t) => isDoneForDay(t)),
       };
     }
     if (isFuture) {
-      // 未来：その日が期限のタスク
+      // 未来：頻度タスク（その日が期限）＋ 曜日タスク（その日が指定曜日）
+      const allDueTasks = tasksWithDueDate.filter((t) =>
+        t.weekdays.length > 0
+          ? isWeekdayTaskForDate(t.weekdays, selectedDate)
+          : t.due_date === selectedStr
+      );
       return {
-        pendingTasks: tasksWithDueDate
-          .filter((t) => t.due_date === selectedStr && !allCompletedIds.has(t.id))
-          .sort((a, b) => {
-            if (a.is_mine !== b.is_mine) return a.is_mine ? -1 : 1;
-            return 0;
-          }),
+        pendingTasks: allDueTasks
+          .filter((t) => !allCompletedIds.has(t.id))
+          .sort((a, b) => (a.is_mine !== b.is_mine ? (a.is_mine ? -1 : 1) : 0)),
         completedTasksForDay: [],
       };
     }
     return { pendingTasks: [], completedTasksForDay: [] };
-  }, [tasksWithDueDate, isToday, isFuture, todayStr, selectedStr, allCompletedIds]);
+  }, [tasksWithDueDate, isToday, isFuture, todayStr, selectedStr, selectedDate, allCompletedIds, weekCompletions, localCompletedIds]);
 
   // 過去の日の完了履歴（ローカル日付で比較）
   const dayCompletions = useMemo(() =>
@@ -153,11 +177,20 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
 
   // ドット計算（タスクリストと完全に一致させる）
   function getDayDots(dateStr: string, dayIdx: number) {
+    const date = weekDates[dayIdx];
     if (dayIdx === todayIdx) {
-      const dueTasks = tasksWithDueDate.filter((t) => t.due_date <= todayStr);
+      const dueTasks = tasksWithDueDate.filter((t) =>
+        t.weekdays.length > 0
+          ? isWeekdayTaskForDate(t.weekdays, date)
+          : t.due_date <= todayStr
+      );
+      const isDone = (t: TaskWithDueDate) =>
+        t.weekdays.length > 0
+          ? isWeekdayTaskCompletedOnDate(t.id, dateStr, weekCompletions) || localCompletedIds.has(t.id)
+          : allCompletedIds.has(t.id);
       return {
-        pending: dueTasks.filter((t) => !allCompletedIds.has(t.id)).length,
-        done: dueTasks.filter((t) => allCompletedIds.has(t.id)).length,
+        pending: dueTasks.filter((t) => !isDone(t)).length,
+        done: dueTasks.filter((t) => isDone(t)).length,
       };
     }
     if (dateStr < todayStr) {
@@ -167,9 +200,11 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
       ).length;
       return { pending: 0, done };
     }
-    // 未来：その日が期限のタスク
-    const pending = tasksWithDueDate.filter(
-      (t) => t.due_date === dateStr && !allCompletedIds.has(t.id)
+    // 未来：頻度タスク（その日が期限）＋ 曜日タスク（その日が指定曜日）
+    const pending = tasksWithDueDate.filter((t) =>
+      t.weekdays.length > 0
+        ? isWeekdayTaskForDate(t.weekdays, date) && !isWeekdayTaskCompletedOnDate(t.id, dateStr, weekCompletions)
+        : t.due_date === dateStr && !allCompletedIds.has(t.id)
     ).length;
     return { pending, done: 0 };
   }
