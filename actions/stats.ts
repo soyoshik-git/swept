@@ -60,6 +60,7 @@ function calcWeekdayStaleDays(
   weekdays: number[],
   lastCompletedAt: string | null,
   now: Date,
+  gracePeriodHours = 0,
 ): number {
   // 過去7日間で最も直近の指定曜日を探す
   let lastScheduledDate: Date | null = null;
@@ -73,6 +74,10 @@ function calcWeekdayStaleDays(
     }
   }
   if (!lastScheduledDate) return 0;
+
+  // 猶予期間内（指定曜日の翌日8時まで）はまだ放置扱いにしない
+  const graceDeadline = new Date(lastScheduledDate.getTime() + gracePeriodHours * 3600 * 1000);
+  if (now < graceDeadline) return 0;
 
   // 最後の完了が「前回の指定曜日」以降なら完了済み → stale_days = 0
   if (lastCompletedAt) {
@@ -179,7 +184,7 @@ export async function getWeeklySchedule(): Promise<WeeklyScheduleData> {
     const lastAt = lastCompletionMap[task.id] ?? null;
     const weekdays: number[] = (task as unknown as { weekdays: number[] | null }).weekdays ?? [];
     const staleDays = weekdays.length > 0
-      ? calcWeekdayStaleDays(weekdays, lastAt, now)
+      ? calcWeekdayStaleDays(weekdays, lastAt, now, task.is_fixed_assign ? 32 : 0)
       : Math.floor((now.getTime() - new Date(lastAt ?? task.created_at).getTime()) / (1000 * 60 * 60 * 24));
 
     return {
@@ -339,7 +344,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     const lastAt = lastCompletionMap[task.id] ?? null;
     const weekdays: number[] = (task as unknown as { weekdays: number[] | null }).weekdays ?? [];
     const staleDays = weekdays.length > 0
-      ? calcWeekdayStaleDays(weekdays, lastAt, now)
+      ? calcWeekdayStaleDays(weekdays, lastAt, now, (task as unknown as { is_fixed_assign: boolean }).is_fixed_assign ? 32 : 0)
       : Math.floor((now.getTime() - new Date(lastAt ?? task.created_at).getTime()) / (1000 * 60 * 60 * 24));
     return { ...task, last_completed_at: lastAt, stale_days: staleDays };
   });

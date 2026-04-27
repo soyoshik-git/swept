@@ -62,6 +62,9 @@ export default async function TasksPage() {
         }
         if (!lastScheduledDate) {
           staleDays = 0;
+        } else if (task.is_fixed_assign && now < new Date(lastScheduledDate.getTime() + 32 * 3600 * 1000)) {
+          // 固定担当の曜日タスクは翌日8時まで猶予
+          staleDays = 0;
         } else if (lastAt && new Date(lastAt) >= lastScheduledDate) {
           staleDays = 0;
         } else {
