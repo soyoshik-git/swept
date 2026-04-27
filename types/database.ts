@@ -45,6 +45,7 @@ export type NgVote = {
   completion_id: string;
   user_id: string;
   voted_at: string;
+  reason: string | null;
 };
 
 export type MonthlyStat = {
@@ -84,13 +85,26 @@ export type Stats = MonthlyStat & {
   task_count: number;
 };
 
+export type NgVoteWithReason = {
+  id: string;
+  user_id: string;
+  reason: string | null;
+};
+
+export type CompletionWithRelations = Completion & {
+  task: Task;
+  user: User;
+  ng_votes: NgVoteWithReason[];
+};
+
 export type DashboardData = {
   monthlyStats: Stats[];
   tasks: (Task & { last_completed_at: string | null; stale_days: number })[];
-  recentCompletions: (Completion & { task: Task; user: User })[];
-  completionCount: number;  // 自分の今月完了数
-  myTotalPoint: number;     // 自分の今月獲得ポイント
-  myPenaltyCount: number;   // 自分の今月ペナルティ回数
-  myRank: number;           // 今月のランキング順位（0=データなし）
+  recentCompletions: CompletionWithRelations[];
+  completionCount: number;
+  myTotalPoint: number;
+  myPenaltyCount: number;
+  myRank: number;
   overdueCount: number;
+  memberCount: number;
 };

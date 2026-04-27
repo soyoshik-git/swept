@@ -6,6 +6,7 @@ import { RoommateStats } from "@/components/dashboard/RoommateStats";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { NeglectedTasks } from "@/components/dashboard/NeglectedTasks";
 import { WeeklySchedule } from "@/components/dashboard/WeeklySchedule";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -43,31 +44,37 @@ export default async function DashboardPage() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* 統計タイル */}
-      <TaskOverview
-        completionCount={data.completionCount}
-        myTotalPoint={data.myTotalPoint}
-        myPenaltyCount={data.myPenaltyCount}
-        myRank={data.myRank}
-      />
+    <PageTransition>
+      <div className="flex flex-col gap-4">
+        {/* 統計タイル */}
+        <TaskOverview
+          completionCount={data.completionCount}
+          myTotalPoint={data.myTotalPoint}
+          myPenaltyCount={data.myPenaltyCount}
+          myRank={data.myRank}
+        />
 
-      {/* 週間スケジュール */}
-      <WeeklySchedule
-        tasks={weeklySchedule.tasks}
-        weekCompletions={weeklySchedule.weekCompletions}
-      />
+        {/* 週間スケジュール */}
+        <WeeklySchedule
+          tasks={weeklySchedule.tasks}
+          weekCompletions={weeklySchedule.weekCompletions}
+        />
 
-      {/* ランキング */}
-      <RoommateStats stats={data.monthlyStats} />
+        {/* ランキング */}
+        <RoommateStats stats={data.monthlyStats} />
 
-      {/* 放置タスク */}
-      {neglectedTasks.length > 0 && (
-        <NeglectedTasks tasks={neglectedTasks} />
-      )}
+        {/* 放置タスク */}
+        {neglectedTasks.length > 0 && (
+          <NeglectedTasks tasks={neglectedTasks} />
+        )}
 
-      {/* アクティビティ */}
-      <RecentActivity completions={data.recentCompletions} currentUserId={user?.id} />
-    </div>
+        {/* アクティビティ */}
+        <RecentActivity
+          completions={data.recentCompletions}
+          currentUserId={user?.id}
+          memberCount={data.memberCount}
+        />
+      </div>
+    </PageTransition>
   );
 }

@@ -1,5 +1,6 @@
 import { getMonthlyStats } from "@/actions/stats";
 import { Card, CardHeaderCompat as CardHeader } from "@/components/ui/Card";
+import { displayPt } from "@/lib/utils";
 
 export default async function StatsPage() {
   const now = new Date();
@@ -24,29 +25,21 @@ export default async function StatsPage() {
         ) : (
           <ul className="divide-y divide-gray-100">
             {stats.map((s, i) => (
-              <li
-                key={s.user_id}
-                className="flex items-center gap-3 px-4 py-3"
-              >
-                <span className="text-xl w-8 text-center">
-                  {medals[i] ?? ""}
-                </span>
+              <li key={s.user_id} className="flex items-center gap-3 px-4 py-3">
+                <span className="text-xl w-8 text-center">{medals[i] ?? ""}</span>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    {s.user.name}
-                  </p>
+                  <p className="text-sm font-medium text-gray-900">{s.user.name}</p>
                   <p className="text-xs text-gray-400">
-                    獲得 {s.total_point}pt
+                    獲得 {displayPt(s.total_point)}pt
                     {s.penalty_pt > 0 && (
                       <span className="text-red-500">
-                        {" "}
-                        ペナルティ -{s.penalty_pt}pt
+                        {" "}ペナルティ -{displayPt(s.penalty_pt)}pt
                       </span>
                     )}
                   </p>
                 </div>
                 <span className="text-base font-bold text-blue-700">
-                  {s.net_point}pt
+                  {displayPt(s.net_point)}pt
                 </span>
               </li>
             ))}

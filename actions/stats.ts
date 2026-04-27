@@ -56,7 +56,7 @@ export async function getAllCompletions(page = 0, pageSize = 50) {
 
   const { data } = await supabase
     .from("completions")
-    .select("*, task:tasks(*), user:users(*)")
+    .select("*, task:tasks(*), user:users(*), ng_votes(id, user_id, reason)")
     .in("task_id", ids)
     .order("completed_at", { ascending: false })
     .range(page * pageSize, (page + 1) * pageSize - 1);
@@ -123,12 +123,10 @@ export async function getWeeklySchedule(): Promise<WeeklyScheduleData> {
         .limit(1)
         .maybeSingle();
 
-      const staleDays = last
-        ? Math.floor(
-            (now.getTime() - new Date(last.completed_at).getTime()) /
-              (1000 * 60 * 60 * 24)
-          )
-        : 999;
+      const staleDays = Math.floor(
+        (now.getTime() - new Date(last?.completed_at ?? task.created_at).getTime()) /
+          (1000 * 60 * 60 * 24)
+      );
 
       // 期限日 = 最終完了日（なければ作成日）+ 推奨頻度
       const baseDate = last
@@ -226,7 +224,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     .single();
 
   if (!member?.room_id) {
-    return { monthlyStats: [], tasks: [], recentCompletions: [], completionCount: 0, myTotalPoint: 0, myPenaltyCount: 0, myRank: 0, overdueCount: 0 };
+    return { monthlyStats: [], tasks: [], recentCompletions: [], completionCount: 0, myTotalPoint: 0, myPenaltyCount: 0, myRank: 0, overdueCount: 0, memberCount: 0 };
   }
 
   const now = new Date();
@@ -240,6 +238,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     { data: tasksRaw },
     { count: completionCount },
     { count: myPenaltyCount },
+    { count: memberCount },
   ] = await Promise.all([
     supabase
       .from("monthly_stats")
@@ -269,6 +268,12 @@ export async function getDashboardData(): Promise<DashboardData> {
       .eq("user_id", user.id)
       .eq("is_penalized", true)
       .gte("completed_at", monthStart),
+
+    // ルームのメンバー数
+    supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("room_id", member.room_id),
   ]);
 
   // 放置日数を計算
@@ -282,12 +287,10 @@ export async function getDashboardData(): Promise<DashboardData> {
         .limit(1)
         .maybeSingle();
 
-      const staleDays = lastCompletion
-        ? Math.floor(
-            (now.getTime() - new Date(lastCompletion.completed_at).getTime()) /
-              (1000 * 60 * 60 * 24),
-          )
-        : 999;
+      const staleDays = Math.floor(
+        (now.getTime() - new Date(lastCompletion?.completed_at ?? task.created_at).getTime()) /
+          (1000 * 60 * 60 * 24),
+      );
 
       return {
         ...task,
@@ -310,7 +313,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       taskIds.length
         ? supabase
             .from("completions")
-            .select("*, task:tasks(*), user:users(*)")
+            .select("*, task:tasks(*), user:users(*), ng_votes(id, user_id, reason)")
             .in("task_id", taskIds)
             .order("completed_at", { ascending: false })
             .limit(10)
@@ -350,5 +353,6 @@ export async function getDashboardData(): Promise<DashboardData> {
     myPenaltyCount: myPenaltyCount ?? 0,
     myRank,
     overdueCount,
+    memberCount: memberCount ?? 1,
   };
 }

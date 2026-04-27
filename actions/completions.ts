@@ -172,11 +172,14 @@ export async function undoCompletion(completionId: string): Promise<void> {
 }
 
 /** 他人の完了に NG を出す */
-export async function voteNG(completionId: string): Promise<void> {
+export async function voteNG(completionId: string, reason?: string): Promise<{ penaltyPt: number }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
+  const admin = createAdminClient();
+
+  // 既にNG済みか確認
   const { data: existing } = await supabase
     .from("ng_votes")
     .select("id")
@@ -186,11 +189,67 @@ export async function voteNG(completionId: string): Promise<void> {
 
   if (existing) throw new Error("すでに NG を出しています");
 
+  // 完了記録とルーム情報を取得
+  const { data: completion } = await admin
+    .from("completions")
+    .select("user_id, final_point, completed_at, task:tasks(room_id)")
+    .eq("id", completionId)
+    .single();
+
+  if (!completion) throw new Error("完了記録が見つかりません");
+  if (completion.user_id === user.id) throw new Error("自分の完了には NG を出せません");
+
+  const roomId = (completion.task as unknown as { room_id: string } | null)?.room_id;
+  if (!roomId) throw new Error("ルーム情報が見つかりません");
+
+  // ルームのメンバー数を取得してペナルティを計算
+  const { count: memberCount } = await supabase
+    .from("users")
+    .select("id", { count: "exact", head: true })
+    .eq("room_id", roomId);
+
+  const totalMembers = memberCount ?? 1;
+  const finalPoint = completion.final_point ?? 0;
+  const penaltyPt = Math.round(finalPoint / totalMembers);
+
+  // NG投票を記録
   const { error } = await supabase
     .from("ng_votes")
-    .insert({ completion_id: completionId, user_id: user.id, voted_at: new Date().toISOString() });
+    .insert({
+      completion_id: completionId,
+      user_id: user.id,
+      voted_at: new Date().toISOString(),
+      reason: reason ?? null,
+    });
 
   if (error) throw new Error(error.message);
+
+  // 対象ユーザーの monthly_stats に penalty_pt を加算
+  if (penaltyPt > 0) {
+    const completedAt = new Date(completion.completed_at);
+    const year = completedAt.getFullYear();
+    const month = completedAt.getMonth() + 1;
+
+    const { data: stat } = await admin
+      .from("monthly_stats")
+      .select("id, total_point, penalty_pt")
+      .eq("user_id", completion.user_id)
+      .eq("room_id", roomId)
+      .eq("year", year)
+      .eq("month", month)
+      .maybeSingle();
+
+    if (stat) {
+      const newPenalty = (stat.penalty_pt ?? 0) + penaltyPt;
+      const newNet = (stat.total_point ?? 0) - newPenalty;
+      await admin
+        .from("monthly_stats")
+        .update({ penalty_pt: newPenalty, net_point: newNet })
+        .eq("id", stat.id);
+    }
+  }
+
   revalidatePath("/");
   revalidatePath("/activity");
+  return { penaltyPt };
 }

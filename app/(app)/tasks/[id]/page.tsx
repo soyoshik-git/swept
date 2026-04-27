@@ -39,6 +39,17 @@ export default async function TaskDetailPage({
 
   const members = (roomMembers ?? []).map((m) => ({ id: m.id, name: m.name }));
 
+  // 既存タスクの場所一覧
+  const { data: tasksWithSpace } = await supabase
+    .from("tasks")
+    .select("space")
+    .eq("room_id", member?.room_id ?? "")
+    .not("space", "is", null);
+
+  const existingSpaces = Array.from(
+    new Set((tasksWithSpace ?? []).map((t) => t.space).filter(Boolean) as string[])
+  );
+
   async function handleUpdate(data: CreateTaskInput) {
     "use server";
     await updateTask(id, data);
@@ -57,6 +68,7 @@ export default async function TaskDetailPage({
         <TaskForm
           initialValues={task}
           members={members}
+          existingSpaces={existingSpaces}
           onSubmit={handleUpdate}
           submitLabel="保存する"
         />

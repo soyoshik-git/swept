@@ -3,13 +3,28 @@ import { createClient } from "@/lib/supabase/server";
 import { getAllCompletions } from "@/actions/stats";
 import { ChevronLeft } from "lucide-react";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import type { Completion, Task, User } from "@/types/database";
-
-type CompletionWithRelations = Completion & { task: Task; user: User };
+import type { CompletionWithRelations } from "@/types/database";
 
 export default async function ActivityPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  // メンバー数を取得
+  let memberCount = 1;
+  if (user) {
+    const { data: member } = await supabase
+      .from("users")
+      .select("room_id")
+      .eq("id", user.id)
+      .single();
+    if (member?.room_id) {
+      const { count } = await supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .eq("room_id", member.room_id);
+      memberCount = count ?? 1;
+    }
+  }
 
   const completions = (await getAllCompletions(0, 200).catch(() => [])) as CompletionWithRelations[];
 
@@ -25,7 +40,7 @@ export default async function ActivityPage() {
       {completions.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-12">まだ完了記録がありません</p>
       ) : (
-        <RecentActivity completions={completions} currentUserId={user?.id} showAll />
+        <RecentActivity completions={completions} currentUserId={user?.id} memberCount={memberCount} showAll />
       )}
     </div>
   );

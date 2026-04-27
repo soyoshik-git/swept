@@ -4,7 +4,7 @@ import { useState, useTransition, useMemo } from "react";
 import { Check, Bath, UtensilsCrossed, Shirt, Leaf, Trash2, Sparkles, Droplets } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
-import { cn } from "@/lib/utils";
+import { cn, displayPt } from "@/lib/utils";
 import { completeTask } from "@/actions/completions";
 import type { ScheduleTask, WeekCompletion } from "@/actions/stats";
 
@@ -245,7 +245,7 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
               <span className="text-[10px] text-muted-foreground">{task.space}</span>
             )}
             {!completed && (
-              <span className="text-[10px] font-medium text-primary">+{task.base_point}pt</span>
+              <span className="text-[10px] font-medium text-primary">+{displayPt(task.base_point)}pt</span>
             )}
           </div>
         </div>
@@ -280,7 +280,7 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
             {confirmTask.space && (
               <p className="text-sm text-muted-foreground">{confirmTask.space}</p>
             )}
-            <p className="text-2xl font-bold text-primary pt-1">+{confirmTask.base_point}pt</p>
+            <p className="text-2xl font-bold text-primary pt-1">+{displayPt(confirmTask.base_point)}pt</p>
             <p className="text-xs text-muted-foreground">完了すると上記ポイントが加算されます</p>
           </div>
           <div className="grid grid-cols-2 gap-3 pt-2">
