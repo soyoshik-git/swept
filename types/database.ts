@@ -21,6 +21,7 @@ export type Task = {
   room_id: string;
   name: string;
   space: string | null;
+  memo: string | null;
   base_point: number;
   frequency_days: number;
   assigned_user_id: string | null;
@@ -70,6 +71,7 @@ export type InviteToken = {
 export type CreateTaskInput = {
   name: string;
   space?: string;
+  memo?: string;
   base_point: number;
   frequency_days: number;
   assigned_user_id?: string;

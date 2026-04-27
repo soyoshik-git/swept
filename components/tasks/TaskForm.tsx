@@ -139,6 +139,7 @@ export function TaskForm({
 
   const [name, setName] = useState(initialValues?.name ?? "");
   const [space, setSpace] = useState(initialValues?.space ?? "");
+  const [memo, setMemo] = useState(initialValues?.memo ?? "");
   const [basePoint, setBasePoint] = useState(initialValues?.base_point ?? 20);
   const [frequencyDays, setFrequencyDays] = useState(
     initialValues?.frequency_days ?? 7,
@@ -169,6 +170,7 @@ export function TaskForm({
         await onSubmit({
           name,
           space: space || undefined,
+          memo: memo.trim() || undefined,
           base_point: basePoint,
           frequency_days: frequencyDays,
           is_fixed_assign: isFixedAssign,
@@ -206,6 +208,20 @@ export function TaskForm({
           value={space}
           onChange={setSpace}
           existingSpaces={existingSpaces}
+        />
+      </div>
+
+      {/* メモ */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          メモ
+        </label>
+        <textarea
+          value={memo}
+          onChange={(e) => setMemo(e.target.value)}
+          placeholder="例: 排水口の掃除と洗剤投入口の清掃"
+          rows={3}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
       </div>
 

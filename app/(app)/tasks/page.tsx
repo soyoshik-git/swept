@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeaderCompat as CardHeader } from "@/components/ui/Card";
 import { getStaleBadgeVariant, formatStaleDays } from "@/lib/utils";
+import { TaskMemoButton } from "@/components/tasks/TaskMemoButton";
 
 export default async function TasksPage() {
   const supabase = await createClient();
@@ -23,25 +24,31 @@ export default async function TasksPage() {
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 
-  const now = new Date();
-  const tasksWithStale = await Promise.all(
-    (tasks ?? []).map(async (task) => {
-      const { data: last } = await supabase
+  const taskIds = (tasks ?? []).map((t) => t.id);
+
+  // 最終完了日を一括取得（N+1解消）
+  const { data: allCompletions } = taskIds.length
+    ? await supabase
         .from("completions")
-        .select("completed_at")
-        .eq("task_id", task.id)
+        .select("task_id, completed_at")
+        .in("task_id", taskIds)
         .order("completed_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    : { data: [] };
 
-      const baseDateMs = new Date(last?.completed_at ?? task.created_at).getTime();
+  const lastCompletionMap: Record<string, string> = {};
+  for (const c of allCompletions ?? []) {
+    if (!lastCompletionMap[c.task_id]) lastCompletionMap[c.task_id] = c.completed_at;
+  }
+
+  const now = new Date();
+  const tasksWithStale = (tasks ?? [])
+    .map((task) => {
+      const lastAt = lastCompletionMap[task.id] ?? null;
+      const baseDateMs = new Date(lastAt ?? task.created_at).getTime();
       const staleDays = Math.floor((now.getTime() - baseDateMs) / 86400000);
-
       return { ...task, stale_days: staleDays };
-    }),
-  );
-
-  tasksWithStale.sort((a, b) => b.stale_days - a.stale_days);
+    })
+    .sort((a, b) => b.stale_days - a.stale_days);
 
   return (
     <div className="space-y-4">
@@ -64,27 +71,29 @@ export default async function TasksPage() {
         ) : (
           <ul className="divide-y divide-gray-100">
             {tasksWithStale.map((task) => {
-              const variant = getStaleBadgeVariant(
-                task.stale_days,
-                task.frequency_days,
-              );
+              const variant = getStaleBadgeVariant(task.stale_days, task.frequency_days);
               return (
-                <li key={task.id}>
+                <li key={task.id} className="flex items-center">
                   <Link
                     href={`/tasks/${task.id}`}
-                    className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                    className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors min-w-0"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {task.name}
-                      </p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {task.name}
+                        </p>
+                        {task.memo && (
+                          <TaskMemoButton memo={task.memo} taskName={task.name} />
+                        )}
+                      </div>
                       <p className="text-xs text-gray-400">
                         {task.space && `${task.space} · `}
                         {task.base_point}pt · {task.frequency_days}日ごと
                         {task.is_fixed_assign && " · 固定担当"}
                       </p>
                     </div>
-                    <Badge variant={variant}>
+                    <Badge variant={variant} className="shrink-0 ml-2">
                       {formatStaleDays(task.stale_days)}
                     </Badge>
                   </Link>
