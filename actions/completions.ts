@@ -23,6 +23,11 @@ export async function completeTask(taskId: string): Promise<Completion> {
     .single();
   if (!task) throw new Error("Task not found");
 
+  // 固定担当タスクは担当者本人のみ完了可能
+  if (task.is_fixed_assign && task.assigned_user_id && task.assigned_user_id !== authUser.id) {
+    throw new Error("このタスクは担当者のみ完了できます");
+  }
+
   // 実行ユーザー情報を取得
   const { data: member } = await supabase
     .from("users")

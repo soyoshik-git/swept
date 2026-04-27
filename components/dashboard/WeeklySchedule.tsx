@@ -244,9 +244,11 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
           "flex items-center gap-3 p-3 rounded-xl border transition-all",
           completed
             ? "bg-muted/50 border-transparent"
-            : task.is_mine
-            ? "bg-primary/5 border-primary/20 active:scale-[0.98] cursor-pointer"
-            : "bg-card border-border active:scale-[0.98] cursor-pointer"
+            : onComplete
+            ? task.is_mine
+              ? "bg-primary/5 border-primary/20 active:scale-[0.98] cursor-pointer"
+              : "bg-card border-border active:scale-[0.98] cursor-pointer"
+            : "bg-muted/30 border-border/50 opacity-60 cursor-default"
         )}
       >
         <div className={cn("p-2 rounded-lg shrink-0", colorClass, completed && "opacity-50")}>
@@ -399,14 +401,18 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
               </div>
             ) : (
               <>
-                {pendingTasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    onComplete={() => handleConfirm(task)}
-                    isCompleting={isPending && completingId === task.id}
-                  />
-                ))}
+                {pendingTasks.map((task) => {
+                  // 固定担当タスクは担当者本人のみ完了可能
+                  const canComplete = !(task.is_fixed_assign && task.assigned_user_id && !task.is_mine);
+                  return (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      onComplete={canComplete ? () => handleConfirm(task) : undefined}
+                      isCompleting={isPending && completingId === task.id}
+                    />
+                  );
+                })}
                 {completedTasksForDay.map((task) => (
                   <TaskRow key={task.id} task={task} completed />
                 ))}
