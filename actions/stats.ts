@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import type { DashboardData, Stats } from "@/types/database";
+import type { DashboardData, Stats, CompletionWithRelations } from "@/types/database";
 
 export type ScheduleTask = {
   id: string;
@@ -30,6 +30,25 @@ export type WeeklyScheduleData = {
   tasks: ScheduleTask[];
   weekCompletions: WeekCompletion[];
 };
+
+/** task_id[] を受け取り、各タスクの最終完了日時マップを1クエリで返す */
+async function fetchLastCompletionMap(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  taskIds: string[],
+): Promise<Record<string, string>> {
+  if (!taskIds.length) return {};
+  const { data } = await supabase
+    .from("completions")
+    .select("task_id, completed_at")
+    .in("task_id", taskIds)
+    .order("completed_at", { ascending: false });
+
+  const map: Record<string, string> = {};
+  for (const c of data ?? []) {
+    if (!map[c.task_id]) map[c.task_id] = c.completed_at; // 最新1件のみ保持
+  }
+  return map;
+}
 
 export async function getAllCompletions(page = 0, pageSize = 50) {
   const supabase = await createClient();
@@ -80,15 +99,13 @@ export async function getWeeklySchedule(): Promise<WeeklyScheduleData> {
   if (!member?.room_id) return { tasks: [], weekCompletions: [] };
 
   const now = new Date();
-
-  // 今週月曜日の0:00を取得
   const dayOfWeek = now.getDay();
   const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(now);
   monday.setDate(now.getDate() + diffToMonday);
   monday.setHours(0, 0, 0, 0);
 
-  // タスク一覧
+  // タスク一覧を取得
   const { data: tasksRaw } = await supabase
     .from("tasks")
     .select("id, name, space, base_point, frequency_days, is_fixed_assign, assigned_user_id, created_at")
@@ -97,92 +114,75 @@ export async function getWeeklySchedule(): Promise<WeeklyScheduleData> {
 
   const taskIds = (tasksRaw ?? []).map((t) => t.id);
 
-  // 担当ユーザー名をまとめて取得
+  // ─── 並列取得: 最終完了マップ・週間履歴・担当ユーザー名 ───
   const assignedUserIds = [
     ...new Set(
-      (tasksRaw ?? [])
-        .map((t) => t.assigned_user_id)
-        .filter((id): id is string => !!id)
+      (tasksRaw ?? []).map((t) => t.assigned_user_id).filter((id): id is string => !!id)
     ),
   ];
-  const { data: assignedUsers } = assignedUserIds.length
-    ? await supabase.from("users").select("id, name").in("id", assignedUserIds)
-    : { data: [] };
+
+  const [lastCompletionMap, weekCompletionsRaw, assignedUsersData] = await Promise.all([
+    fetchLastCompletionMap(supabase, taskIds),  // N+1 → 1クエリ
+    taskIds.length
+      ? supabase
+          .from("completions")
+          .select("id, task_id, completed_at, task:tasks(name), user:users(name)")
+          .in("task_id", taskIds)
+          .gte("completed_at", monday.toISOString())
+          .order("completed_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    assignedUserIds.length
+      ? supabase.from("users").select("id, name").in("id", assignedUserIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
   const userMap = Object.fromEntries(
-    (assignedUsers ?? []).map((u) => [u.id, u.name])
+    ((assignedUsersData as { data: { id: string; name: string }[] | null }).data ?? []).map((u) => [u.id, u.name])
   );
 
-  // 各タスクの最終完了日時 → stale_days・due_date を計算
-  const tasks: ScheduleTask[] = await Promise.all(
-    (tasksRaw ?? []).map(async (task) => {
-      const { data: last } = await supabase
-        .from("completions")
-        .select("completed_at")
-        .eq("task_id", task.id)
-        .order("completed_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  // stale_days をメモリで計算（クエリなし）
+  const tasks: ScheduleTask[] = (tasksRaw ?? []).map((task) => {
+    const lastAt = lastCompletionMap[task.id] ?? null;
+    const baseDateMs = new Date(lastAt ?? task.created_at).getTime();
+    const staleDays = Math.floor((now.getTime() - baseDateMs) / (1000 * 60 * 60 * 24));
 
-      const staleDays = Math.floor(
-        (now.getTime() - new Date(last?.completed_at ?? task.created_at).getTime()) /
-          (1000 * 60 * 60 * 24)
-      );
+    const baseDate = new Date(lastAt ?? task.created_at);
+    const dueDate = new Date(baseDate);
+    dueDate.setDate(dueDate.getDate() + task.frequency_days);
 
-      // 期限日 = 最終完了日（なければ作成日）+ 推奨頻度
-      const baseDate = last
-        ? new Date(last.completed_at)
-        : new Date(task.created_at);
-      const dueDate = new Date(baseDate);
-      dueDate.setDate(dueDate.getDate() + task.frequency_days);
-      const dueDateStr = dueDate.toISOString().slice(0, 10);
+    return {
+      id: task.id,
+      name: task.name,
+      space: task.space,
+      base_point: task.base_point,
+      frequency_days: task.frequency_days,
+      stale_days: staleDays,
+      last_completed_at: lastAt,
+      created_at: task.created_at,
+      is_fixed_assign: task.is_fixed_assign ?? false,
+      is_mine: task.is_fixed_assign === true && task.assigned_user_id === user.id,
+      assigned_user_id: task.assigned_user_id,
+      assigned_user_name: task.assigned_user_id ? (userMap[task.assigned_user_id] ?? null) : null,
+    };
+  });
 
+  const weekCompletions: WeekCompletion[] = ((weekCompletionsRaw as { data: unknown[] | null }).data ?? []).map(
+    (c: unknown) => {
+      const row = c as { id: string; task_id: string; completed_at: string; task: { name: string } | null; user: { name: string } | null };
       return {
-        id: task.id,
-        name: task.name,
-        space: task.space,
-        base_point: task.base_point,
-        frequency_days: task.frequency_days,
-        stale_days: staleDays,
-        last_completed_at: last?.completed_at ?? null,
-        created_at: task.created_at,
-        is_fixed_assign: task.is_fixed_assign ?? false,
-        is_mine:
-          task.is_fixed_assign === true && task.assigned_user_id === user.id,
-        assigned_user_id: task.assigned_user_id,
-        assigned_user_name: task.assigned_user_id
-          ? (userMap[task.assigned_user_id] ?? null)
-          : null,
+        id: row.id,
+        task_id: row.task_id,
+        completed_at: row.completed_at,
+        task_name: row.task?.name ?? "",
+        user_name: row.user?.name ?? "",
       };
-    })
-  );
-
-  // 今週の完了履歴
-  const { data: weekCompletionsRaw } = taskIds.length
-    ? await supabase
-        .from("completions")
-        .select("id, task_id, completed_at, task:tasks(name), user:users(name)")
-        .in("task_id", taskIds)
-        .gte("completed_at", monday.toISOString())
-        .order("completed_at", { ascending: false })
-    : { data: [] };
-
-  const weekCompletions: WeekCompletion[] = (weekCompletionsRaw ?? []).map(
-    (c) => ({
-      id: c.id,
-      task_id: c.task_id,
-      completed_at: c.completed_at,
-      task_name: (c.task as unknown as { name: string } | null)?.name ?? "",
-      user_name: (c.user as unknown as { name: string } | null)?.name ?? "",
-    })
+    }
   );
 
   return { tasks, weekCompletions };
 }
 
-export async function getMonthlyStats(
-  year: number,
-  month: number,
-): Promise<Stats[]> {
+export async function getMonthlyStats(year: number, month: number): Promise<Stats[]> {
   const supabase = await createClient();
 
   const {
@@ -224,7 +224,17 @@ export async function getDashboardData(): Promise<DashboardData> {
     .single();
 
   if (!member?.room_id) {
-    return { monthlyStats: [], tasks: [], recentCompletions: [], completionCount: 0, myTotalPoint: 0, myPenaltyCount: 0, myRank: 0, overdueCount: 0, memberCount: 0 };
+    return {
+      monthlyStats: [],
+      tasks: [],
+      recentCompletions: [],
+      completionCount: 0,
+      myTotalPoint: 0,
+      myPenaltyCount: 0,
+      myRank: 0,
+      overdueCount: 0,
+      memberCount: 0,
+    };
   }
 
   const now = new Date();
@@ -232,7 +242,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   const month = now.getMonth() + 1;
   const monthStart = new Date(year, month - 1, 1).toISOString();
 
-  // 並列取得
+  // ─── Step1: 並列取得（タスク一覧含む） ───
   const [
     { data: monthlyStats },
     { data: tasksRaw },
@@ -247,90 +257,65 @@ export async function getDashboardData(): Promise<DashboardData> {
       .eq("year", year)
       .eq("month", month)
       .order("net_point", { ascending: false }),
-
     supabase
       .from("tasks")
       .select("*")
       .eq("room_id", member.room_id)
       .eq("is_active", true),
-
-    // 自分の今月完了数
     supabase
       .from("completions")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .gte("completed_at", monthStart),
-
-    // 自分の今月ペナルティ回数
     supabase
       .from("completions")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .eq("is_penalized", true)
       .gte("completed_at", monthStart),
-
-    // ルームのメンバー数
     supabase
       .from("users")
       .select("id", { count: "exact", head: true })
       .eq("room_id", member.room_id),
   ]);
 
-  // 放置日数を計算
-  const tasks = await Promise.all(
-    (tasksRaw ?? []).map(async (task) => {
-      const { data: lastCompletion } = await supabase
-        .from("completions")
-        .select("completed_at")
-        .eq("task_id", task.id)
-        .order("completed_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  const taskIds = (tasksRaw ?? []).map((t) => t.id);
 
-      const staleDays = Math.floor(
-        (now.getTime() - new Date(lastCompletion?.completed_at ?? task.created_at).getTime()) /
-          (1000 * 60 * 60 * 24),
-      );
+  // ─── Step2: 並列取得（最終完了マップ・最近の完了・今月の完了） ───
+  const [lastCompletionMap, recentCompletionsData, monthlyCompletionsData] = await Promise.all([
+    fetchLastCompletionMap(supabase, taskIds),  // N+1 → 1クエリ
+    taskIds.length
+      ? supabase
+          .from("completions")
+          .select("*, task:tasks(*), user:users(*), ng_votes(id, user_id, reason)")
+          .in("task_id", taskIds)
+          .order("completed_at", { ascending: false })
+          .limit(10)
+      : Promise.resolve({ data: [] }),
+    taskIds.length
+      ? supabase
+          .from("completions")
+          .select("user_id")
+          .in("task_id", taskIds)
+          .gte("completed_at", monthStart)
+      : Promise.resolve({ data: [] }),
+  ]);
 
-      return {
-        ...task,
-        last_completed_at: lastCompletion?.completed_at ?? null,
-        stale_days: staleDays,
-      };
-    }),
-  );
+  // stale_days をメモリで計算（クエリなし）
+  const tasks = (tasksRaw ?? []).map((task) => {
+    const lastAt = lastCompletionMap[task.id] ?? null;
+    const baseDateMs = new Date(lastAt ?? task.created_at).getTime();
+    const staleDays = Math.floor((now.getTime() - baseDateMs) / (1000 * 60 * 60 * 24));
+    return { ...task, last_completed_at: lastAt, stale_days: staleDays };
+  });
 
   tasks.sort((a, b) => b.stale_days - a.stale_days);
 
-  const overdueCount = tasks.filter(
-    (t) => t.stale_days >= t.frequency_days * 2,
-  ).length;
+  const overdueCount = tasks.filter((t) => t.stale_days >= t.frequency_days * 2).length;
 
-  const taskIds = (tasksRaw ?? []).map((t) => t.id);
-
-  const [{ data: recentCompletions }, { data: monthlyCompletionsRaw }] =
-    await Promise.all([
-      taskIds.length
-        ? supabase
-            .from("completions")
-            .select("*, task:tasks(*), user:users(*), ng_votes(id, user_id, reason)")
-            .in("task_id", taskIds)
-            .order("completed_at", { ascending: false })
-            .limit(10)
-        : Promise.resolve({ data: [] }),
-      // ユーザーごとの今月完了タスク数
-      taskIds.length
-        ? supabase
-            .from("completions")
-            .select("user_id")
-            .in("task_id", taskIds)
-            .gte("completed_at", monthStart)
-        : Promise.resolve({ data: [] }),
-    ]);
-
-  // user_id ごとにカウント
+  // user_id ごとに完了数カウント
   const taskCountByUser: Record<string, number> = {};
-  for (const c of monthlyCompletionsRaw ?? []) {
+  for (const c of (monthlyCompletionsData as { data: { user_id: string }[] | null }).data ?? []) {
     taskCountByUser[c.user_id] = (taskCountByUser[c.user_id] ?? 0) + 1;
   }
 
@@ -339,7 +324,6 @@ export async function getDashboardData(): Promise<DashboardData> {
     task_count: taskCountByUser[s.user_id] ?? 0,
   }));
 
-  // 自分の今月ポイントと順位
   const myStatIndex = statsWithCount.findIndex((s) => s.user_id === user.id);
   const myTotalPoint = myStatIndex >= 0 ? statsWithCount[myStatIndex].net_point : 0;
   const myRank = myStatIndex >= 0 ? myStatIndex + 1 : 0;
@@ -347,7 +331,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   return {
     monthlyStats: statsWithCount as Stats[],
     tasks,
-    recentCompletions: recentCompletions ?? [],
+    recentCompletions: ((recentCompletionsData as { data: CompletionWithRelations[] | null }).data ?? []),
     completionCount: completionCount ?? 0,
     myTotalPoint,
     myPenaltyCount: myPenaltyCount ?? 0,
