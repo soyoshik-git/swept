@@ -50,6 +50,39 @@ async function fetchLastCompletionMap(
   return map;
 }
 
+/**
+ * 曜日タスクの stale_days を計算
+ * 「前回の指定曜日（過去7日以内）」からの経過日数を返す
+ * 前回の指定曜日以降に完了済みなら 0 を返す
+ */
+function calcWeekdayStaleDays(
+  weekdays: number[],
+  lastCompletedAt: string | null,
+  now: Date,
+): number {
+  // 過去7日間で最も直近の指定曜日を探す
+  let lastScheduledDate: Date | null = null;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    d.setHours(0, 0, 0, 0);
+    if (weekdays.includes(d.getDay())) {
+      lastScheduledDate = d;
+      break;
+    }
+  }
+  if (!lastScheduledDate) return 0;
+
+  // 最後の完了が「前回の指定曜日」以降なら完了済み → stale_days = 0
+  if (lastCompletedAt) {
+    const lastDone = new Date(lastCompletedAt);
+    if (lastDone >= lastScheduledDate) return 0;
+  }
+
+  // 完了していない → 前回指定曜日からの日数
+  return Math.floor((now.getTime() - lastScheduledDate.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 export async function getAllCompletions(page = 0, pageSize = 50) {
   const supabase = await createClient();
 
@@ -143,12 +176,10 @@ export async function getWeeklySchedule(): Promise<WeeklyScheduleData> {
   // stale_days をメモリで計算（クエリなし）
   const tasks: ScheduleTask[] = (tasksRaw ?? []).map((task) => {
     const lastAt = lastCompletionMap[task.id] ?? null;
-    const baseDateMs = new Date(lastAt ?? task.created_at).getTime();
-    const staleDays = Math.floor((now.getTime() - baseDateMs) / (1000 * 60 * 60 * 24));
-
-    const baseDate = new Date(lastAt ?? task.created_at);
-    const dueDate = new Date(baseDate);
-    dueDate.setDate(dueDate.getDate() + task.frequency_days);
+    const weekdays: number[] = (task as unknown as { weekdays: number[] | null }).weekdays ?? [];
+    const staleDays = weekdays.length > 0
+      ? calcWeekdayStaleDays(weekdays, lastAt, now)
+      : Math.floor((now.getTime() - new Date(lastAt ?? task.created_at).getTime()) / (1000 * 60 * 60 * 24));
 
     return {
       id: task.id,
@@ -304,8 +335,10 @@ export async function getDashboardData(): Promise<DashboardData> {
   // stale_days をメモリで計算（クエリなし）
   const tasks = (tasksRaw ?? []).map((task) => {
     const lastAt = lastCompletionMap[task.id] ?? null;
-    const baseDateMs = new Date(lastAt ?? task.created_at).getTime();
-    const staleDays = Math.floor((now.getTime() - baseDateMs) / (1000 * 60 * 60 * 24));
+    const weekdays: number[] = (task as unknown as { weekdays: number[] | null }).weekdays ?? [];
+    const staleDays = weekdays.length > 0
+      ? calcWeekdayStaleDays(weekdays, lastAt, now)
+      : Math.floor((now.getTime() - new Date(lastAt ?? task.created_at).getTime()) / (1000 * 60 * 60 * 24));
     return { ...task, last_completed_at: lastAt, stale_days: staleDays };
   });
 

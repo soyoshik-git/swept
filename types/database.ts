@@ -24,6 +24,7 @@ export type Task = {
   memo: string | null;
   base_point: number;
   frequency_days: number;
+  weekdays: number[] | null;  // 0=日,1=月,2=火,3=水,4=木,5=金,6=土
   assigned_user_id: string | null;
   is_fixed_assign: boolean;
   is_active: boolean;
@@ -74,6 +75,7 @@ export type CreateTaskInput = {
   memo?: string;
   base_point: number;
   frequency_days: number;
+  weekdays?: number[];
   assigned_user_id?: string;
   is_fixed_assign?: boolean;
 };

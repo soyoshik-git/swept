@@ -150,10 +150,26 @@ export function TaskForm({
   const [assignedUserId, setAssignedUserId] = useState(
     initialValues?.assigned_user_id ?? "",
   );
+  // 曜日指定モード
+  const initWeekdays = initialValues?.weekdays ?? [];
+  const [scheduleMode, setScheduleMode] = useState<"days" | "weekdays">(
+    initWeekdays.length > 0 ? "weekdays" : "days"
+  );
+  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>(initWeekdays);
+
+  function toggleWeekday(day: number) {
+    setSelectedWeekdays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
+    );
+  }
 
   function handleFixedAssignChange(checked: boolean) {
     setIsFixedAssign(checked);
-    if (!checked) setAssignedUserId("");
+    if (!checked) {
+      setAssignedUserId("");
+      setScheduleMode("days");
+      setSelectedWeekdays([]);
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -164,6 +180,10 @@ export function TaskForm({
       setError("固定担当タスクの場合、担当者を選択してください");
       return;
     }
+    if (isFixedAssign && scheduleMode === "weekdays" && selectedWeekdays.length === 0) {
+      setError("曜日を1つ以上選択してください");
+      return;
+    }
 
     startTransition(async () => {
       try {
@@ -172,7 +192,8 @@ export function TaskForm({
           space: space || undefined,
           memo: memo.trim() || undefined,
           base_point: basePoint,
-          frequency_days: frequencyDays,
+          frequency_days: scheduleMode === "weekdays" ? 7 : frequencyDays,
+          weekdays: isFixedAssign && scheduleMode === "weekdays" ? selectedWeekdays : [],
           is_fixed_assign: isFixedAssign,
           assigned_user_id: isFixedAssign ? assignedUserId : undefined,
         });
@@ -264,20 +285,22 @@ export function TaskForm({
         </div>
       </div>
 
-      {/* 推奨頻度 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {isFixedAssign ? "期限（日）" : "推奨頻度（日）"}
-        </label>
-        <input
-          type="number"
-          min={1}
-          required
-          value={frequencyDays}
-          onChange={(e) => setFrequencyDays(Number(e.target.value))}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+      {/* 推奨頻度（曜日モード以外） */}
+      {!(isFixedAssign && scheduleMode === "weekdays") && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {isFixedAssign ? "期限（日）" : "推奨頻度（日）"}
+          </label>
+          <input
+            type="number"
+            min={1}
+            required={!(isFixedAssign && scheduleMode === "weekdays")}
+            value={frequencyDays}
+            onChange={(e) => setFrequencyDays(Number(e.target.value))}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      )}
 
       {/* 固定担当 */}
       <div className="space-y-3">
@@ -292,7 +315,8 @@ export function TaskForm({
         </label>
 
         {isFixedAssign && (
-          <div className="space-y-2">
+          <div className="space-y-3">
+            {/* 担当者 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 担当者 <span className="text-red-500">*</span>
@@ -312,9 +336,80 @@ export function TaskForm({
                 </select>
               )}
             </div>
-            <p className="text-xs text-orange-600 bg-orange-50 rounded-lg px-3 py-2">
-              ⚠️ 期限（{frequencyDays}日）以内に完了しないと、担当者に -{displayPt(basePoint)}pt のペナルティが発生します
-            </p>
+
+            {/* スケジュールモード切替 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">スケジュール</label>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {(["days", "weekdays"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setScheduleMode(mode)}
+                    className={cn(
+                      "py-2 rounded-lg border-2 text-sm font-medium transition-all",
+                      scheduleMode === mode
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : "border-gray-200 text-gray-500 hover:border-gray-300"
+                    )}
+                  >
+                    {mode === "days" ? "📅 期限（日数）" : "🗓 曜日指定"}
+                  </button>
+                ))}
+              </div>
+
+              {scheduleMode === "weekdays" && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-7 gap-1">
+                    {[
+                      { day: 1, label: "月" },
+                      { day: 2, label: "火" },
+                      { day: 3, label: "水" },
+                      { day: 4, label: "木" },
+                      { day: 5, label: "金" },
+                      { day: 6, label: "土" },
+                      { day: 0, label: "日" },
+                    ].map(({ day, label }) => {
+                      const selected = selectedWeekdays.includes(day);
+                      const isSat = day === 6;
+                      const isSun = day === 0;
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => toggleWeekday(day)}
+                          className={cn(
+                            "aspect-square rounded-xl border-2 text-sm font-bold transition-all",
+                            selected
+                              ? isSat
+                                ? "border-blue-400 bg-blue-500 text-white"
+                                : isSun
+                                  ? "border-red-400 bg-red-500 text-white"
+                                  : "border-primary bg-primary text-primary-foreground"
+                              : isSat
+                                ? "border-gray-200 text-blue-400 hover:border-blue-200"
+                                : isSun
+                                  ? "border-gray-200 text-red-400 hover:border-red-200"
+                                  : "border-gray-200 text-gray-600 hover:border-gray-300"
+                          )}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-orange-600 bg-orange-50 rounded-lg px-3 py-2">
+                    ⚠️ 指定した曜日に完了しないと、担当者に -{displayPt(basePoint)}pt のペナルティが発生します
+                  </p>
+                </div>
+              )}
+
+              {scheduleMode === "days" && (
+                <p className="text-xs text-orange-600 bg-orange-50 rounded-lg px-3 py-2">
+                  ⚠️ 期限（{frequencyDays}日）以内に完了しないと、担当者に -{displayPt(basePoint)}pt のペナルティが発生します
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>

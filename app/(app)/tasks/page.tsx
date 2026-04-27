@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeaderCompat as CardHeader } from "@/components/ui/Card";
-import { getStaleBadgeVariant, formatStaleDays } from "@/lib/utils";
+import { getStaleBadgeVariant, formatStaleDays, formatWeekdays } from "@/lib/utils";
 import { TaskMemoButton } from "@/components/tasks/TaskMemoButton";
 
 export default async function TasksPage() {
@@ -89,7 +89,10 @@ export default async function TasksPage() {
                       </div>
                       <p className="text-xs text-gray-400">
                         {task.space && `${task.space} · `}
-                        {task.base_point}pt · {task.frequency_days}日ごと
+                        {task.base_point}pt ·{" "}
+                        {(task.weekdays as number[] | null)?.length
+                          ? `${formatWeekdays(task.weekdays as number[])}曜日`
+                          : `${task.frequency_days}日ごと`}
                         {task.is_fixed_assign && " · 固定担当"}
                       </p>
                     </div>
