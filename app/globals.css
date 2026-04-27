@@ -74,6 +74,8 @@
   textarea,
   select {
     color: #111827;
+    /* iOSのフォーカス時自動ズームを防ぐ（font-size < 16pxだとズームされる） */
+    font-size: max(16px, 1em);
   }
   input::placeholder,
   textarea::placeholder {
