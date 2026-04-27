@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Home, Pencil, Check, X, Users, Crown } from "lucide-react";
 import { updateRoomName } from "@/actions/rooms";
 
-type Member = { id: string; name: string; isMe: boolean };
+type Member = { id: string; name: string; avatar_url: string | null; isMe: boolean; isOwner: boolean };
 
 type Props = {
   roomName: string;
@@ -110,18 +110,26 @@ export function RoomSection({ roomName: initialRoomName, members }: Props) {
                 key={member.id}
                 className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
               >
-                <div
-                  className={`w-10 h-10 rounded-full bg-gradient-to-br ${AVATAR_COLORS[index % AVATAR_COLORS.length]} flex items-center justify-center text-sm font-bold text-white`}
-                >
-                  {member.name.charAt(0)}
-                </div>
+                {member.avatar_url ? (
+                  <img
+                    src={member.avatar_url}
+                    alt={member.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className={`w-10 h-10 rounded-full bg-gradient-to-br ${AVATAR_COLORS[index % AVATAR_COLORS.length]} flex items-center justify-center text-sm font-bold text-white`}
+                  >
+                    {member.name.charAt(0)}
+                  </div>
+                )}
                 <span className="flex-1 text-foreground font-medium">
                   {member.name}
                   {member.isMe && (
                     <span className="ml-1 text-xs text-muted-foreground">（あなた）</span>
                   )}
                 </span>
-                {index === 0 && (
+                {member.isOwner && (
                   <span className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
                     <Crown className="w-3 h-3" />
                     オーナー

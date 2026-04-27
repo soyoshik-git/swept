@@ -18,15 +18,18 @@ export default async function SettingsPage() {
   // ユーザー・ルーム情報
   const { data: member } = await supabase
     .from("users")
-    .select("*, room:rooms(name, code, line_group_id, bonus_multiplier_max)")
+    .select("*, room:rooms(name, code, line_group_id, bonus_multiplier_max, owner_user_id)")
     .eq("id", user.id)
     .single();
 
-  // メンバー一覧
+  const ownerUserId = (member?.room as { owner_user_id?: string | null } | null)?.owner_user_id ?? null;
+
+  // メンバー一覧（作成日順、avatar_url含む）
   const { data: roomMembers } = await supabase
     .from("users")
-    .select("id, name")
-    .eq("room_id", member?.room_id ?? "");
+    .select("id, name, avatar_url")
+    .eq("room_id", member?.room_id ?? "")
+    .order("created_at", { ascending: true });
 
   // 累計ポイント・完了数
   const { data: allStats } = await supabase
@@ -54,7 +57,9 @@ export default async function SettingsPage() {
   const members = (roomMembers ?? []).map((m) => ({
     id: m.id,
     name: m.name,
+    avatar_url: m.avatar_url ?? null,
     isMe: m.id === user.id,
+    isOwner: m.id === ownerUserId,
   }));
 
   return (

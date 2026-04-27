@@ -3,7 +3,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { getDashboardData } from "@/actions/stats";
 import { FloatingCompleteButton } from "@/components/dashboard/FloatingCompleteButton";
-import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 
 export default async function AppLayout({
   children,
@@ -17,15 +17,17 @@ export default async function AppLayout({
 
   let roomName = "";
   let userName = "";
+  let avatarUrl: string | null = null;
 
   if (user) {
     const { data: member } = await supabase
       .from("users")
-      .select("name, room:rooms(name)")
+      .select("name, avatar_url, room:rooms(name)")
       .eq("id", user.id)
       .single();
     roomName = (member?.room as { name?: string } | null)?.name ?? "";
     userName = member?.name ?? "";
+    avatarUrl = member?.avatar_url ?? null;
   }
 
   const data = await getDashboardData().catch(() => null);
@@ -62,6 +64,7 @@ export default async function AppLayout({
             <div className="flex items-center gap-2">
               <Link href="/settings" aria-label="設定">
                 <Avatar className="h-8 w-8 border-2 border-primary/20 cursor-pointer">
+                  {avatarUrl && <AvatarImage src={avatarUrl} alt={userName} />}
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
                     {initials}
                   </AvatarFallback>

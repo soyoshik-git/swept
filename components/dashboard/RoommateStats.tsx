@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import { Trophy, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
 import { staggerContainer, fadeUp, spring } from "@/lib/animate";
 import { displayPt } from "@/lib/utils";
@@ -96,6 +96,9 @@ export function RoommateStats({ stats }: Props) {
                 </motion.div>
 
                 <Avatar className="h-8 w-8 shrink-0">
+                  {stat.user.avatar_url && (
+                    <AvatarImage src={stat.user.avatar_url} alt={stat.user.name} />
+                  )}
                   <AvatarFallback className={cn("text-xs text-white font-medium", avatarColor)}>
                     {initials}
                   </AvatarFallback>

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { CheckCircle2, MoreVertical, RotateCcw, ThumbsDown, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { cn, displayPt } from "@/lib/utils";
 import { undoCompletion, voteNG } from "@/actions/completions";
 import {
@@ -328,6 +328,9 @@ export function RecentActivity({
               <div className="flex-1 pb-3 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <Avatar className="h-4 w-4 shrink-0">
+                    {completion.user.avatar_url && (
+                      <AvatarImage src={completion.user.avatar_url} alt={completion.user.name} />
+                    )}
                     <AvatarFallback className={cn("text-[8px] text-white", avatarColor)}>
                       {initials}
                     </AvatarFallback>
