@@ -31,7 +31,9 @@ export default async function AppLayout({
   }
 
   const data = await getDashboardData().catch(() => null);
-  const tasks = data?.tasks ?? [];
+  const tasks = (data?.tasks ?? []).filter(
+    (t) => !t.is_fixed_assign || t.assigned_user_id === user?.id
+  );
 
   const initials = userName.charAt(0) || "?";
 

@@ -46,6 +46,20 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
   const showSheet = open && !confirmTask;
   const showConfirm = !!confirmTask;
 
+  // スペースでグループ化（スペースなしは「その他」へ）
+  const OTHER_KEY = "__other__";
+  const grouped = new Map<string, Task[]>();
+  for (const task of tasks) {
+    const key = task.space?.trim() || OTHER_KEY;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(task);
+  }
+  const spaceOrder = [...grouped.keys()].sort((a, b) => {
+    if (a === OTHER_KEY) return 1;
+    if (b === OTHER_KEY) return -1;
+    return a.localeCompare(b, "ja");
+  });
+
   return (
     <>
       {/* フローティングボタン */}
@@ -99,40 +113,57 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <ul className="overflow-y-auto divide-y divide-gray-100">
+              <div className="overflow-y-auto">
                 {tasks.length === 0 && (
-                  <li className="px-4 py-6 text-center text-sm text-gray-400">
+                  <p className="px-4 py-6 text-center text-sm text-gray-400">
                     アクティブなタスクがありません
-                  </li>
+                  </p>
                 )}
-                {tasks.map((task, i) => {
-                  const variant = getStaleBadgeVariant(task.stale_days, task.frequency_days);
+                {spaceOrder.map((spaceKey) => {
+                  const group = grouped.get(spaceKey)!;
+                  const label = spaceKey === OTHER_KEY ? "その他" : spaceKey;
+                  let itemIndex = 0;
+                  for (const k of spaceOrder) {
+                    if (k === spaceKey) break;
+                    itemIndex += grouped.get(k)!.length;
+                  }
                   return (
-                    <motion.li
-                      key={task.id}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.04, ...softSpring }}
-                    >
-                      <button
-                        onClick={() => handleSelect(task)}
-                        className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
-                      >
-                        <div className="text-left flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900">{task.name}</p>
-                          {task.space && (
-                            <p className="text-xs text-gray-400 mt-0.5">{task.space}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs font-bold text-primary">+{displayPt(task.base_point)}pt</span>
-                          <Badge variant={variant}>{formatStaleDays(task.stale_days)}</Badge>
-                        </div>
-                      </button>
-                    </motion.li>
+                    <div key={spaceKey}>
+                      <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          {label}
+                        </span>
+                      </div>
+                      <ul className="divide-y divide-gray-100">
+                        {group.map((task, i) => {
+                          const variant = getStaleBadgeVariant(task.stale_days, task.frequency_days);
+                          return (
+                            <motion.li
+                              key={task.id}
+                              initial={{ opacity: 0, x: -8 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: (itemIndex + i) * 0.04, ...softSpring }}
+                            >
+                              <button
+                                onClick={() => handleSelect(task)}
+                                className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                              >
+                                <div className="text-left flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900">{task.name}</p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-xs font-bold text-primary">+{displayPt(task.base_point)}pt</span>
+                                  <Badge variant={variant}>{formatStaleDays(task.stale_days)}</Badge>
+                                </div>
+                              </button>
+                            </motion.li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                   );
                 })}
-              </ul>
+              </div>
             </motion.div>
           </div>
         )}
