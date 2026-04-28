@@ -25,7 +25,10 @@ export function TaskMemoButton({ memo, taskName }: { memo: string; taskName: str
 
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          <div
+            className="fixed inset-0 z-50 flex flex-col justify-end"
+            onClick={(e) => e.stopPropagation()}
+          >
             <motion.div
               className="absolute inset-0 bg-black/40"
               variants={overlay}
