@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function verifySignature(body: string, signature: string): boolean {
   const secret = process.env.LINE_CHANNEL_SECRET!;
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const events: Array<{ type: string; source: { groupId?: string; roomId?: string } }> =
     body.events ?? [];
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   for (const event of events) {
     if (event.type === "join") {
