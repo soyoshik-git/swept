@@ -22,6 +22,13 @@ export function buildCompletionMessage(
   return `✅ ${userName} が「${taskName}」を完了しました！（+${point}pt）`;
 }
 
+export function buildDailyReminderMessage(
+  tasks: { userName: string; taskName: string }[],
+): string {
+  const lines = tasks.map((t) => `・${t.userName}: 「${t.taskName}」`).join("\n");
+  return `🗓️ 今日の担当タスク\n\n${lines}\n\nよろしくお願いします！`;
+}
+
 export function buildMonthlyReportMessage(
   month: number,
   rankings: { name: string; point: number }[],

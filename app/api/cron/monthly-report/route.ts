@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { calcPenalty } from "@/lib/points";
 import { buildMonthlyReportMessage, pushMessage } from "@/lib/line";
 
@@ -9,12 +9,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = await createClient();
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const supabase = createAdminClient();
+  const nowUTC = new Date();
+  const nowJST = new Date(nowUTC.getTime() + 9 * 60 * 60 * 1000);
+  const year = nowJST.getUTCFullYear();
+  const month = nowJST.getUTCMonth() + 1;
 
-  // 全ルームを取得
+  // 月末当日のみ実行（翌日が来月になる日）
+  const tomorrow = new Date(nowJST);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  if (tomorrow.getUTCMonth() + 1 === month) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "not last day of month" });
+  }
+
   const { data: rooms } = await supabase.from("rooms").select("*");
 
   for (const room of rooms ?? []) {
