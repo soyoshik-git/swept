@@ -23,7 +23,9 @@ export async function POST(req: NextRequest) {
   const events: Array<{ type: string; source: { groupId?: string; roomId?: string } }> =
     body.events ?? [];
 
-  console.log("[LINE webhook] events:", JSON.stringify(events.map(e => ({ type: e.type, source: e.source }))));
+  for (const e of events) {
+    console.log(`[LINE webhook] type=${e.type} groupId=${e.source.groupId ?? ""} roomId=${e.source.roomId ?? ""}`);
+  }
 
   const supabase = await createClient();
 
