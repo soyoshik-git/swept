@@ -246,11 +246,21 @@ export async function voteNG(completionId: string, reason?: string): Promise<{ p
 
     if (stat) {
       const newPenalty = (stat.penalty_pt ?? 0) + penaltyPt;
-      const newNet = (stat.total_point ?? 0) - newPenalty;
+      const newNet = Math.max(0, (stat.total_point ?? 0) - newPenalty);
       await admin
         .from("monthly_stats")
         .update({ penalty_pt: newPenalty, net_point: newNet })
         .eq("id", stat.id);
+    } else {
+      await admin.from("monthly_stats").insert({
+        room_id: roomId,
+        user_id: completion.user_id,
+        year,
+        month,
+        total_point: 0,
+        penalty_pt: penaltyPt,
+        net_point: 0,
+      });
     }
   }
 
