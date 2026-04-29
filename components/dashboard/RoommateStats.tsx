@@ -63,7 +63,7 @@ export function RoommateStats({ stats }: Props) {
 
   return (
     <Card className="border-none shadow-sm overflow-hidden">
-      <CardHeader className="pb-2 px-4">
+      <CardHeader className="pb-3 px-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base text-foreground">ランキング</CardTitle>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -72,9 +72,9 @@ export function RoommateStats({ stats }: Props) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-3">
+      <CardContent className="px-4 pb-4">
         <motion.div
-          className="space-y-1.5"
+          className="space-y-2"
           variants={staggerContainer}
           initial="hidden"
           animate="show"
@@ -95,12 +95,12 @@ export function RoommateStats({ stats }: Props) {
                 className={cn(
                   "flex items-center gap-2.5 rounded-xl",
                   isFirst
-                    ? "p-2.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200"
+                    ? "p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200"
                     : isSecond
-                      ? "p-2 bg-gray-50 border border-gray-200"
+                      ? "p-2.5 bg-gray-50 border border-gray-200"
                       : isThird
-                        ? "p-2 bg-orange-50/60 border border-orange-100"
-                        : "p-2",
+                        ? "p-2.5 bg-orange-50/60 border border-orange-100"
+                        : "p-2.5",
                 )}
               >
                 {/* 順位バッジ */}
@@ -109,10 +109,10 @@ export function RoommateStats({ stats }: Props) {
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ ...spring, delay: 0.1 + index * 0.06 }}
                   className={cn(
-                    "flex items-center justify-center shrink-0",
+                    "flex items-center justify-center shrink-0 w-7 h-7",
                     isFirst || isSecond || isThird
-                      ? "w-7 h-7 text-xl"
-                      : "w-6 h-6 rounded-full bg-muted text-[10px] font-bold text-muted-foreground",
+                      ? "text-xl"
+                      : "rounded-full bg-muted text-[10px] font-bold text-muted-foreground",
                   )}
                 >
                   {isFirst ? "🥇" : isSecond ? "🥈" : isThird ? "🥉" : index + 1}
