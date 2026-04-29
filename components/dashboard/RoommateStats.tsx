@@ -63,7 +63,7 @@ export function RoommateStats({ stats }: Props) {
 
   return (
     <Card className="border-none shadow-sm overflow-hidden">
-      <CardHeader className="pb-3 px-4">
+      <CardHeader className="pb-2 px-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base text-foreground">ランキング</CardTitle>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -72,9 +72,9 @@ export function RoommateStats({ stats }: Props) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-4">
+      <CardContent className="px-4 pb-3">
         <motion.div
-          className="space-y-2"
+          className="space-y-1.5"
           variants={staggerContainer}
           initial="hidden"
           animate="show"
@@ -95,12 +95,12 @@ export function RoommateStats({ stats }: Props) {
                 className={cn(
                   "flex items-center gap-2.5 rounded-xl",
                   isFirst
-                    ? "p-3.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200"
+                    ? "p-2.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200"
                     : isSecond
-                      ? "p-3 bg-gray-50 border border-gray-200"
+                      ? "p-2 bg-gray-50 border border-gray-200"
                       : isThird
-                        ? "p-3 bg-orange-50/60 border border-orange-100"
-                        : "p-2.5",
+                        ? "p-2 bg-orange-50/60 border border-orange-100"
+                        : "p-2",
                 )}
               >
                 {/* 順位バッジ */}
@@ -118,7 +118,7 @@ export function RoommateStats({ stats }: Props) {
                   {isFirst ? "🥇" : isSecond ? "🥈" : isThird ? "🥉" : index + 1}
                 </motion.div>
 
-                <Avatar className={cn("shrink-0", isFirst ? "h-9 w-9" : "h-8 w-8")}>
+                <Avatar className="h-7 w-7 shrink-0">
                   {stat.user.avatar_url && (
                     <AvatarImage src={stat.user.avatar_url} alt={stat.user.name} />
                   )}
@@ -130,13 +130,13 @@ export function RoommateStats({ stats }: Props) {
                 <div className="flex-1 min-w-0">
                   <h4
                     className={cn(
-                      "font-medium text-foreground truncate mb-0.5",
+                      "font-medium text-foreground truncate leading-tight",
                       isFirst ? "text-sm font-semibold" : "text-sm",
                     )}
                   >
                     {stat.user.name}
                   </h4>
-                  <p className="text-[10px] text-muted-foreground mb-1.5">
+                  <p className="text-[10px] text-muted-foreground mb-1">
                     {stat.task_count}タスク
                   </p>
                   {/* プログレスバー */}
