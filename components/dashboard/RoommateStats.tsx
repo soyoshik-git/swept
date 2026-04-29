@@ -128,17 +128,37 @@ export function RoommateStats({ stats }: Props) {
                 </Avatar>
 
                 <div className="flex-1 min-w-0">
-                  <h4
-                    className={cn(
-                      "font-medium text-foreground truncate leading-tight",
-                      isFirst ? "text-sm font-semibold" : "text-sm",
-                    )}
-                  >
-                    {stat.user.name}
-                  </h4>
-                  <p className="text-[10px] text-muted-foreground mb-1">
-                    {stat.task_count}タスク
-                  </p>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <h4
+                        className={cn(
+                          "font-medium text-foreground truncate leading-tight",
+                          isFirst ? "text-sm font-semibold" : "text-sm",
+                        )}
+                      >
+                        {stat.user.name}
+                      </h4>
+                      <span className="text-[10px] text-muted-foreground shrink-0">
+                        {stat.task_count}タスク
+                      </span>
+                    </div>
+                    <motion.div
+                      className="flex items-baseline gap-0.5 shrink-0"
+                      initial={{ opacity: 0, x: 8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ ...spring, delay: 0.2 + index * 0.06 }}
+                    >
+                      <span
+                        className={cn(
+                          "font-bold text-foreground tabular-nums",
+                          isFirst ? "text-base" : "text-sm",
+                        )}
+                      >
+                        <AnimatedPoints value={stat.net_point} delay={0.3 + index * 0.06} />
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">pt</span>
+                    </motion.div>
+                  </div>
                   {/* プログレスバー */}
                   <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
                     <motion.div
@@ -162,29 +182,6 @@ export function RoommateStats({ stats }: Props) {
                     />
                   </div>
                 </div>
-
-                {/* ポイント */}
-                <motion.div
-                  className="text-right shrink-0"
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ ...spring, delay: 0.2 + index * 0.06 }}
-                >
-                  <div className="flex items-baseline gap-0.5 justify-end">
-                    <span
-                      className={cn(
-                        "font-bold text-foreground tabular-nums",
-                        isFirst ? "text-base" : "text-sm",
-                      )}
-                    >
-                      <AnimatedPoints
-                        value={stat.net_point}
-                        delay={0.3 + index * 0.06}
-                      />
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">pt</span>
-                  </div>
-                </motion.div>
               </motion.div>
             );
           })}
