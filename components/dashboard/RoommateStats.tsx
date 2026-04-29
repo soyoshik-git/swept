@@ -109,17 +109,13 @@ export function RoommateStats({ stats }: Props) {
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ ...spring, delay: 0.1 + index * 0.06 }}
                   className={cn(
-                    "flex items-center justify-center shrink-0 rounded-full font-bold",
-                    isFirst
-                      ? "w-7 h-7 text-base bg-amber-400 text-white shadow shadow-amber-200"
-                      : isSecond
-                        ? "w-6 h-6 text-xs bg-gray-400 text-white"
-                        : isThird
-                          ? "w-6 h-6 text-xs bg-orange-400 text-white"
-                          : "w-6 h-6 text-xs bg-muted text-muted-foreground",
+                    "flex items-center justify-center shrink-0",
+                    isFirst || isSecond || isThird
+                      ? "w-7 h-7 text-xl"
+                      : "w-6 h-6 rounded-full bg-muted text-[10px] font-bold text-muted-foreground",
                   )}
                 >
-                  {isFirst ? "👑" : index + 1}
+                  {isFirst ? "🥇" : isSecond ? "🥈" : isThird ? "🥉" : index + 1}
                 </motion.div>
 
                 <Avatar className={cn("shrink-0", isFirst ? "h-9 w-9" : "h-8 w-8")}>
