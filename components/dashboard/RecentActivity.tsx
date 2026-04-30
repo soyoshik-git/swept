@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { CheckCircle2, MoreVertical, RotateCcw, ThumbsDown, X } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { cn, displayPt } from "@/lib/utils";
 import { undoCompletion, voteNG } from "@/actions/completions";
@@ -271,37 +271,15 @@ export function RecentActivity({
 
   const userColorMap = new Map<string, string>();
 
-  if (completions.length === 0) {
-    return (
-      <Card className="border-none shadow-sm">
-        <CardContent className="px-4 pt-3">
-          <div className="flex items-center justify-between pb-3">
-            <span className="text-base font-semibold text-foreground">アクティビティ</span>
-            <Link href="/activity" className="text-xs text-primary font-medium">全て見る →</Link>
-          </div>
-          <p className="text-sm text-muted-foreground text-center py-4">まだ完了記録がありません</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const inner = (
-    <div className="px-4">
-      {!showAll && (
-        <div className="flex items-center justify-between pb-3">
-          <span className="text-base font-semibold text-foreground">アクティビティ</span>
-          <Link href="/activity" className="text-xs text-primary font-medium">全て見る →</Link>
-        </div>
-      )}
-
-      <motion.div
-        className="space-y-3"
-        ref={listRef}
-        variants={staggerContainer}
-        initial="hidden"
-        animate="show"
-      >
-        {completions.map((completion, index) => {
+  const listEl = (
+    <motion.div
+      className="space-y-3"
+      ref={listRef}
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+    >
+      {completions.map((completion, index) => {
           const isLast = index === completions.length - 1;
           const userId = completion.user_id;
           if (!userColorMap.has(userId)) {
@@ -375,21 +353,48 @@ export function RecentActivity({
           );
         })}
       </motion.div>
-    </div>
   );
+
+  if (completions.length === 0) {
+    return (
+      <Card className="border-none shadow-sm">
+        <CardHeader className="px-4 pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-heading text-base font-bold text-foreground leading-tight">Activity</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">アクティビティ</p>
+            </div>
+            <Link href="/activity" className="text-xs text-primary font-medium">全て見る →</Link>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4">
+          <p className="text-sm text-muted-foreground text-center py-4">まだ完了記録がありません</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (showAll) {
     return (
-      <div className="bg-card rounded-xl border shadow-sm py-4">
-        {inner}
+      <div className="bg-card rounded-xl border shadow-sm py-4 px-4">
+        {listEl}
       </div>
     );
   }
 
   return (
     <Card className="border-none shadow-sm">
-      <CardContent className="px-0 pt-3">
-        {inner}
+      <CardHeader className="px-4 pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-heading text-base font-bold text-foreground leading-tight">Activity</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">アクティビティ</p>
+          </div>
+          <Link href="/activity" className="text-xs text-primary font-medium">全て見る →</Link>
+        </div>
+      </CardHeader>
+      <CardContent className="px-4">
+        {listEl}
       </CardContent>
     </Card>
   );

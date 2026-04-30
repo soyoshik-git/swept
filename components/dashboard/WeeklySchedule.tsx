@@ -338,11 +338,11 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
       </div>
     )}
     <Card className="border-none shadow-sm">
-      <CardHeader className="pb-3 px-4">
-        <CardTitle>
+      <CardHeader className="px-4 pb-3">
+        <div>
           <p className="font-heading text-base font-bold text-foreground leading-tight">Schedule</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">今週のスケジュール</p>
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent className="px-4">
         {/* 週カレンダー */}

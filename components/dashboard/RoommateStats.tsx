@@ -47,10 +47,13 @@ export function RoommateStats({ stats }: Props) {
   if (stats.length === 0) {
     return (
       <Card className="border shadow-sm">
-        <CardHeader className="px-5 pt-5 pb-3">
-          <PanelTitle en="Ranking" ja="ランキング" />
+        <CardHeader className="px-4 pb-3">
+          <div>
+            <p className="font-heading text-base font-bold text-foreground leading-tight">Ranking</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">ランキング</p>
+          </div>
         </CardHeader>
-        <CardContent className="px-5 pb-5">
+        <CardContent className="px-4">
           <p className="text-sm text-muted-foreground text-center py-4">
             今月のデータがまだありません
           </p>
@@ -63,16 +66,19 @@ export function RoommateStats({ stats }: Props) {
 
   return (
     <Card className="border shadow-sm overflow-hidden">
-      <CardHeader className="px-5 pt-5 pb-3">
+      <CardHeader className="px-4 pb-3">
         <div className="flex items-center justify-between">
-          <PanelTitle en="Ranking" ja="ランキング" />
+          <div>
+            <p className="font-heading text-base font-bold text-foreground leading-tight">Ranking</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">ランキング</p>
+          </div>
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
             <Trophy className="w-3 h-3 text-chart-4" />
             今月
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-5 pb-5">
+      <CardContent className="px-4">
         <motion.div
           className="space-y-2"
           variants={staggerContainer}
@@ -186,11 +192,3 @@ export function RoommateStats({ stats }: Props) {
   );
 }
 
-function PanelTitle({ en, ja }: { en: string; ja: string }) {
-  return (
-    <div>
-      <p className="font-heading text-base font-bold text-foreground leading-tight">{en}</p>
-      <p className="text-[11px] text-muted-foreground mt-0.5">{ja}</p>
-    </div>
-  );
-}

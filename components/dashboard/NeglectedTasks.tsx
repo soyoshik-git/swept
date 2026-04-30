@@ -51,15 +51,15 @@ export function NeglectedTasks({ tasks: initialTasks }: { tasks: NeglectedTask[]
   return (
     <>
       <Card className="border-none shadow-sm overflow-hidden">
-        <CardHeader className="pb-3 px-4">
+        <CardHeader className="px-4 pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               <div>
                 <p className="font-heading text-base font-bold text-foreground leading-tight">Neglected</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">放置タスク</p>
               </div>
-            </CardTitle>
+            </div>
             <span className="text-xs text-muted-foreground">{activeTasks.length}件</span>
           </div>
           <p className="text-xs text-muted-foreground">長く放置されたタスクほどボーナスポイントがアップ</p>
