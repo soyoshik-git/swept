@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
+import Image from "next/image";
 import { staggerContainer, fadeUp, spring } from "@/lib/animate";
 import { displayPt } from "@/lib/utils";
-import { CompletionIcon, PointsIcon, PenaltyIcon, RankIcon } from "@/components/icons/StatIcons";
 
 type Props = {
   completionCount: number;
@@ -52,14 +52,14 @@ function StatCard({
   label,
   value,
   numericValue,
-  Icon,
+  imgSrc,
   color,
   index,
 }: {
   label: string;
   value?: string;
   numericValue?: number;
-  Icon: React.ComponentType;
+  imgSrc: string;
   color: string;
   index: number;
 }) {
@@ -78,7 +78,7 @@ function StatCard({
         transition={{ type: "spring", stiffness: 320, damping: 22, delay: 0.08 + index * 0.07 }}
         className="mb-2.5"
       >
-        <Icon />
+        <Image src={imgSrc} alt={label} width={40} height={40} />
       </motion.div>
       <div className={`text-[17px] font-bold tabular-nums leading-tight ${color}`}>
         {displayValue}
@@ -93,26 +93,26 @@ export function TaskOverview({ completionCount, myTotalPoint, myPenaltyCount, my
     {
       label: "完了",
       numericValue: completionCount,
-      Icon: CompletionIcon,
+      imgSrc: "/icons/icon-completion.PNG",
       color: "text-accent",
     },
     {
       label: "獲得pt",
       numericValue: displayPt(myTotalPoint),
-      Icon: PointsIcon,
+      imgSrc: "/icons/icon-points.PNG",
       color: "text-primary",
     },
     {
       label: "ペナルティ",
       numericValue: myPenaltyCount,
-      Icon: PenaltyIcon,
+      imgSrc: "/icons/icon-penalty.PNG",
       color: "text-destructive",
     },
     {
       label: "順位",
       value: myRank > 0 ? `${myRank}位` : "—",
       numericValue: myRank > 0 ? myRank : 0,
-      Icon: RankIcon,
+      imgSrc: "/icons/icon-rank.PNG",
       color: "text-chart-4",
     },
   ];
