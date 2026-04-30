@@ -55,10 +55,10 @@ export function NeglectedTasks({ tasks: initialTasks }: { tasks: NeglectedTask[]
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              <span>
-                <span className="block font-heading text-sm font-semibold tracking-wide">Neglected</span>
-                <span className="block text-[10px] font-normal tracking-normal text-muted-foreground -mt-0.5">放置タスク</span>
-              </span>
+              <div>
+                <p className="font-heading text-base font-bold text-foreground leading-tight">Neglected</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">放置タスク</p>
+              </div>
             </CardTitle>
             <span className="text-xs text-muted-foreground">{activeTasks.length}件</span>
           </div>
@@ -102,7 +102,7 @@ export function NeglectedTasks({ tasks: initialTasks }: { tasks: NeglectedTask[]
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <div className="text-right">
-                        <span className="text-base font-bold text-gradient-primary">+{displayPt(totalPoints)}</span>
+                        <span className="text-base font-bold text-primary">+{displayPt(totalPoints)}</span>
                         <span className="text-[10px] text-muted-foreground ml-0.5">pt</span>
                       </div>
                       <Button
@@ -170,7 +170,7 @@ export function NeglectedTasks({ tasks: initialTasks }: { tasks: NeglectedTask[]
                   <p className="text-center text-xs text-muted-foreground mb-3">{confirmTask.space}</p>
                 )}
                 <motion.p
-                  className="text-center text-2xl font-bold text-gradient-primary mb-6"
+                  className="text-center text-2xl font-bold text-primary mb-6"
                   initial={{ scale: 0.7, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.22 }}

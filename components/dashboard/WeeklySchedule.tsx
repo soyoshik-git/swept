@@ -317,7 +317,7 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
             {confirmTask.space && (
               <p className="text-sm text-muted-foreground">{confirmTask.space}</p>
             )}
-            <p className="text-2xl font-bold text-gradient-primary pt-1">+{displayPt(confirmTask.base_point)}pt</p>
+            <p className="text-2xl font-bold text-primary pt-1">+{displayPt(confirmTask.base_point)}pt</p>
             <p className="text-xs text-muted-foreground">完了すると上記ポイントが加算されます</p>
           </div>
           <div className="grid grid-cols-2 gap-3 pt-2">
@@ -340,8 +340,8 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
     <Card className="border-none shadow-sm">
       <CardHeader className="pb-3 px-4">
         <CardTitle>
-          <span className="block font-heading text-sm font-semibold tracking-wide">Schedule</span>
-          <span className="block text-[10px] font-normal tracking-normal text-muted-foreground -mt-0.5">今週のスケジュール</span>
+          <p className="font-heading text-base font-bold text-foreground leading-tight">Schedule</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">今週のスケジュール</p>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4">

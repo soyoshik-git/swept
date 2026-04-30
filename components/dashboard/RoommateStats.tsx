@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { motion, useMotionValue, useTransform, animate } from "motion/react";
 import { Trophy } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
 import { staggerContainer, fadeUp, spring } from "@/lib/animate";
@@ -46,11 +46,11 @@ type Props = {
 export function RoommateStats({ stats }: Props) {
   if (stats.length === 0) {
     return (
-      <Card className="border-none shadow-sm">
-        <CardHeader className="pb-3 px-4">
-          <CardTitle className="text-base text-foreground">ランキング</CardTitle>
+      <Card className="border shadow-sm">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <PanelTitle en="Ranking" ja="ランキング" />
         </CardHeader>
-        <CardContent className="px-4">
+        <CardContent className="px-5 pb-5">
           <p className="text-sm text-muted-foreground text-center py-4">
             今月のデータがまだありません
           </p>
@@ -62,20 +62,17 @@ export function RoommateStats({ stats }: Props) {
   const maxPt = Math.max(stats[0]?.net_point ?? 1, 1);
 
   return (
-    <Card className="border-none shadow-sm overflow-hidden">
-      <CardHeader className="pb-3 px-4">
+    <Card className="border shadow-sm overflow-hidden">
+      <CardHeader className="px-5 pt-5 pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>
-            <span className="block font-heading text-sm font-semibold tracking-wide">Ranking</span>
-            <span className="block text-[10px] font-normal tracking-normal text-muted-foreground -mt-0.5">ランキング</span>
-          </CardTitle>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <PanelTitle en="Ranking" ja="ランキング" />
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
             <Trophy className="w-3 h-3 text-chart-4" />
             今月
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-4">
+      <CardContent className="px-5 pb-5">
         <motion.div
           className="space-y-2"
           variants={staggerContainer}
@@ -96,14 +93,14 @@ export function RoommateStats({ stats }: Props) {
                 variants={fadeUp}
                 transition={{ ...spring, delay: index * 0.06 }}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-xl",
+                  "flex items-center gap-3 rounded-xl p-3",
                   isFirst
-                    ? "p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200"
+                    ? "bg-primary/8 border border-primary/20"
                     : isSecond
-                      ? "p-2.5 bg-gray-50 border border-gray-200"
+                      ? "bg-muted/60 border border-border"
                       : isThird
-                        ? "p-2.5 bg-orange-50/60 border border-orange-100"
-                        : "p-2.5",
+                        ? "bg-muted/40 border border-border"
+                        : "bg-muted/20",
                 )}
               >
                 {/* 順位バッジ */}
@@ -111,38 +108,35 @@ export function RoommateStats({ stats }: Props) {
                   initial={{ scale: 0, rotate: -20 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ ...spring, delay: 0.1 + index * 0.06 }}
-                  className={cn(
-                    "flex items-center justify-center shrink-0 w-7 h-7",
-                    isFirst || isSecond || isThird
-                      ? "text-xl"
-                      : "rounded-full bg-muted text-[10px] font-bold text-muted-foreground",
-                  )}
+                  className="flex items-center justify-center shrink-0 w-7 h-7 text-xl"
                 >
-                  {isFirst ? "🥇" : isSecond ? "🥈" : isThird ? "🥉" : index + 1}
+                  {isFirst ? "🥇" : isSecond ? "🥈" : isThird ? "🥉" : (
+                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
+                      {index + 1}
+                    </span>
+                  )}
                 </motion.div>
 
-                <Avatar className="h-7 w-7 shrink-0">
+                <Avatar className="h-8 w-8 shrink-0">
                   {stat.user.avatar_url && (
                     <AvatarImage src={stat.user.avatar_url} alt={stat.user.name} />
                   )}
-                  <AvatarFallback className={cn("text-xs text-white font-medium", avatarColor)}>
+                  <AvatarFallback className={cn("text-xs text-white font-semibold", avatarColor)}>
                     {initials}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <h4
-                        className={cn(
-                          "font-medium text-foreground truncate leading-tight",
-                          isFirst ? "text-sm font-semibold" : "text-sm",
-                        )}
-                      >
+                      <h4 className={cn(
+                        "text-sm text-foreground truncate leading-tight",
+                        isFirst ? "font-semibold" : "font-medium",
+                      )}>
                         {stat.user.name}
                       </h4>
-                      <span className="text-[10px] text-muted-foreground shrink-0">
-                        {stat.task_count}タスク
+                      <span className="text-[11px] text-muted-foreground shrink-0">
+                        {stat.task_count}件
                       </span>
                     </div>
                     <motion.div
@@ -151,29 +145,27 @@ export function RoommateStats({ stats }: Props) {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ ...spring, delay: 0.2 + index * 0.06 }}
                     >
-                      <span
-                        className={cn(
-                          "font-bold tabular-nums text-gradient-primary",
-                          isFirst ? "text-base" : "text-sm",
-                        )}
-                      >
+                      <span className={cn(
+                        "font-bold text-primary tabular-nums",
+                        isFirst ? "text-[15px]" : "text-sm",
+                      )}>
                         <AnimatedPoints value={stat.net_point} delay={0.3 + index * 0.06} />
                       </span>
-                      <span className="text-[10px] text-muted-foreground">pt</span>
+                      <span className="text-[11px] text-muted-foreground">pt</span>
                     </motion.div>
                   </div>
                   {/* プログレスバー */}
-                  <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-border rounded-full overflow-hidden">
                     <motion.div
                       className={cn(
                         "h-full rounded-full",
                         isFirst
-                          ? "bg-gradient-to-r from-amber-400 to-yellow-300"
+                          ? "bg-gradient-primary"
                           : isSecond
-                            ? "bg-gray-400"
+                            ? "bg-muted-foreground/50"
                             : isThird
-                              ? "bg-orange-400"
-                              : "bg-primary/50",
+                              ? "bg-muted-foreground/35"
+                              : "bg-muted-foreground/25",
                       )}
                       initial={{ width: "0%" }}
                       animate={{ width: `${barPct}%` }}
@@ -191,5 +183,14 @@ export function RoommateStats({ stats }: Props) {
         </motion.div>
       </CardContent>
     </Card>
+  );
+}
+
+function PanelTitle({ en, ja }: { en: string; ja: string }) {
+  return (
+    <div>
+      <p className="font-heading text-base font-bold text-foreground leading-tight">{en}</p>
+      <p className="text-[11px] text-muted-foreground mt-0.5">{ja}</p>
+    </div>
   );
 }
