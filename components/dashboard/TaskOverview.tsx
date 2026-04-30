@@ -78,7 +78,7 @@ function StatCard({
         transition={{ type: "spring", stiffness: 320, damping: 22, delay: 0.08 + index * 0.07 }}
         className="mb-2.5"
       >
-        <Image src={imgSrc} alt={label} width={40} height={40} />
+        <Image src={imgSrc} alt={label} width={64} height={64} />
       </motion.div>
       <div className={`text-[17px] font-bold tabular-nums leading-tight ${color}`}>
         {displayValue}
