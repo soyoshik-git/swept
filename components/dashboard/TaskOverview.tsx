@@ -70,13 +70,13 @@ function StatCard({
     <motion.div
       variants={fadeUp}
       transition={{ ...spring, delay: index * 0.04 }}
-      className="flex flex-col items-center pt-4 pb-3 px-1 rounded-2xl bg-card shadow-sm border border-border"
+      className="flex flex-col items-center py-3 px-2 rounded-2xl bg-card shadow-sm border border-border"
     >
       <motion.div
         initial={{ scale: 0.5, opacity: 0, y: 8 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 320, damping: 22, delay: 0.08 + index * 0.07 }}
-        className="mb-2.5"
+        className="mb-1.5"
       >
         <Image src={imgSrc} alt={label} width={64} height={64} />
       </motion.div>

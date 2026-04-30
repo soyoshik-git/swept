@@ -51,7 +51,7 @@ export function NeglectedTasks({ tasks: initialTasks }: { tasks: NeglectedTask[]
   return (
     <>
       <Card className="border-none shadow-sm overflow-hidden">
-        <CardHeader className="pb-2 px-4">
+        <CardHeader className="pb-3 px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />

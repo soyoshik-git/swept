@@ -346,7 +346,7 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
       </CardHeader>
       <CardContent className="px-4">
         {/* 週カレンダー */}
-        <div className="flex gap-1.5 mb-4">
+        <div className="flex gap-1.5 mb-3">
           {weekDates.map((date, i) => {
             const dateStr = localDateStr(date);
             const isSelected = i === selectedIdx;
