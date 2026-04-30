@@ -224,7 +224,7 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
                   <p className="text-center text-xs text-muted-foreground mb-3">{confirmTask.space}</p>
                 )}
                 <motion.p
-                  className="text-center text-2xl font-bold text-gradient-primary mb-6"
+                  className="text-center text-2xl font-bold text-primary mb-6"
                   initial={{ scale: 0.7, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.22 }}
