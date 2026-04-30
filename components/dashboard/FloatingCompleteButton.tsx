@@ -67,7 +67,7 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
       {/* フローティングボタン */}
       <motion.button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-white shadow-lg shadow-violet-500/30"
         aria-label="タスクを完了する"
         whileTap={{ scale: 0.88 }}
         animate={justDone ? { scale: [1, 1.3, 0.9, 1.1, 1] } : { scale: 1 }}
@@ -224,7 +224,7 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
                   <p className="text-center text-xs text-muted-foreground mb-3">{confirmTask.space}</p>
                 )}
                 <motion.p
-                  className="text-center text-2xl font-bold text-primary mb-6"
+                  className="text-center text-2xl font-bold text-gradient-primary mb-6"
                   initial={{ scale: 0.7, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.22 }}
@@ -244,7 +244,7 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
                 <motion.button
                   onClick={handleConfirm}
                   disabled={isPending}
-                  className="flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 active:bg-primary/80 disabled:opacity-50 transition-colors"
+                  className="flex-1 rounded-xl bg-gradient-primary py-3 text-sm font-bold text-white hover:opacity-90 active:opacity-80 disabled:opacity-50 transition-opacity"
                   whileTap={{ scale: 0.97 }}
                 >
                   {isPending ? "完了中..." : "完了にする"}

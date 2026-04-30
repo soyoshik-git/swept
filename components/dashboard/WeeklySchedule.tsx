@@ -317,7 +317,7 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
             {confirmTask.space && (
               <p className="text-sm text-muted-foreground">{confirmTask.space}</p>
             )}
-            <p className="text-2xl font-bold text-primary pt-1">+{displayPt(confirmTask.base_point)}pt</p>
+            <p className="text-2xl font-bold text-gradient-primary pt-1">+{displayPt(confirmTask.base_point)}pt</p>
             <p className="text-xs text-muted-foreground">完了すると上記ポイントが加算されます</p>
           </div>
           <div className="grid grid-cols-2 gap-3 pt-2">
@@ -329,7 +329,7 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
             </button>
             <button
               onClick={handleComplete}
-              className="h-12 rounded-xl bg-primary text-primary-foreground text-sm font-bold active:scale-95 transition-all"
+              className="h-12 rounded-xl bg-gradient-primary text-white text-sm font-bold hover:opacity-90 active:scale-95 transition-all"
             >
               完了にする
             </button>
@@ -339,7 +339,10 @@ export function WeeklySchedule({ tasks, weekCompletions }: Props) {
     )}
     <Card className="border-none shadow-sm">
       <CardHeader className="pb-3 px-4">
-        <CardTitle className="text-base text-foreground">今週のスケジュール</CardTitle>
+        <CardTitle>
+          <span className="block font-heading text-sm font-semibold tracking-wide">Schedule</span>
+          <span className="block text-[10px] font-normal tracking-normal text-muted-foreground -mt-0.5">今週のスケジュール</span>
+        </CardTitle>
       </CardHeader>
       <CardContent className="px-4">
         {/* 週カレンダー */}

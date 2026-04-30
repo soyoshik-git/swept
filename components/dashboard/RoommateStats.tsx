@@ -65,7 +65,10 @@ export function RoommateStats({ stats }: Props) {
     <Card className="border-none shadow-sm overflow-hidden">
       <CardHeader className="pb-3 px-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base text-foreground">ランキング</CardTitle>
+          <CardTitle>
+            <span className="block font-heading text-sm font-semibold tracking-wide">Ranking</span>
+            <span className="block text-[10px] font-normal tracking-normal text-muted-foreground -mt-0.5">ランキング</span>
+          </CardTitle>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <Trophy className="w-3 h-3 text-chart-4" />
             今月
@@ -150,7 +153,7 @@ export function RoommateStats({ stats }: Props) {
                     >
                       <span
                         className={cn(
-                          "font-bold text-foreground tabular-nums",
+                          "font-bold tabular-nums text-gradient-primary",
                           isFirst ? "text-base" : "text-sm",
                         )}
                       >
