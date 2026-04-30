@@ -33,6 +33,7 @@
 
 @theme inline {
   --font-sans: var(--font-plus-jakarta), "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  --font-heading: var(--font-space-grotesk), var(--font-plus-jakarta), sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -81,6 +82,17 @@
   textarea::placeholder {
     color: #9ca3af;
   }
+}
+
+/* ── Gradient primary ── */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, oklch(0.56 0.20 240), oklch(0.50 0.22 285));
+}
+.text-gradient-primary {
+  background: linear-gradient(135deg, oklch(0.56 0.20 240), oklch(0.50 0.22 285));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* ── View Transitions ── */
