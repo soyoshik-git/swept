@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { CheckCircle2, Coins, AlertCircle, Trophy } from "lucide-react";
 import { staggerContainer, fadeUp, spring } from "@/lib/animate";
 import { displayPt } from "@/lib/utils";
+import { CompletionIcon, PointsIcon, PenaltyIcon, RankIcon } from "@/components/icons/StatIcons";
 
 type Props = {
   completionCount: number;
@@ -30,7 +30,6 @@ function useCountUp(target: number, duration = 900) {
       if (!startRef.current) startRef.current = timestamp;
       const elapsed = timestamp - startRef.current;
       const progress = Math.min(elapsed / duration, 1);
-      // easeOutExpo
       const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
       const current = Math.round(from + diff * eased);
       setDisplay(current);
@@ -53,17 +52,15 @@ function StatCard({
   label,
   value,
   numericValue,
-  icon: Icon,
+  Icon,
   color,
-  bgColor,
   index,
 }: {
   label: string;
   value?: string;
   numericValue?: number;
-  icon: React.ElementType;
+  Icon: React.ComponentType;
   color: string;
-  bgColor: string;
   index: number;
 }) {
   const counted = useCountUp(numericValue ?? 0);
@@ -73,18 +70,20 @@ function StatCard({
     <motion.div
       variants={fadeUp}
       transition={{ ...spring, delay: index * 0.04 }}
-      className="flex flex-col items-center p-3 rounded-2xl bg-card shadow-sm"
+      className="flex flex-col items-center pt-4 pb-3 px-1 rounded-2xl bg-card shadow-sm border border-border"
     >
       <motion.div
-        initial={{ scale: 0.6, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ ...spring, delay: 0.1 + index * 0.06 }}
-        className={`p-2 rounded-xl ${bgColor} mb-2`}
+        initial={{ scale: 0.5, opacity: 0, y: 8 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 320, damping: 22, delay: 0.08 + index * 0.07 }}
+        className="mb-2.5"
       >
-        <Icon className={`w-4 h-4 ${color}`} />
+        <Icon />
       </motion.div>
-      <div className={`text-lg font-bold tabular-nums ${color}`}>{displayValue}</div>
-      <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
+      <div className={`text-[17px] font-bold tabular-nums leading-tight ${color}`}>
+        {displayValue}
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-1">{label}</p>
     </motion.div>
   );
 }
@@ -94,31 +93,27 @@ export function TaskOverview({ completionCount, myTotalPoint, myPenaltyCount, my
     {
       label: "完了",
       numericValue: completionCount,
-      icon: CheckCircle2,
+      Icon: CompletionIcon,
       color: "text-accent",
-      bgColor: "bg-accent/10",
     },
     {
       label: "獲得pt",
       numericValue: displayPt(myTotalPoint),
-      icon: Coins,
+      Icon: PointsIcon,
       color: "text-primary",
-      bgColor: "bg-primary/10",
     },
     {
       label: "ペナルティ",
       numericValue: myPenaltyCount,
-      icon: AlertCircle,
+      Icon: PenaltyIcon,
       color: "text-destructive",
-      bgColor: "bg-destructive/10",
     },
     {
       label: "順位",
       value: myRank > 0 ? `${myRank}位` : "—",
       numericValue: myRank > 0 ? myRank : 0,
-      icon: Trophy,
+      Icon: RankIcon,
       color: "text-chart-4",
-      bgColor: "bg-chart-4/10",
     },
   ];
 
