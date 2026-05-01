@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getMonthlyStats } from "@/actions/stats";
 import { Card, CardHeaderCompat as CardHeader } from "@/components/ui/Card";
 import { displayPt } from "@/lib/utils";
@@ -12,9 +13,17 @@ export default async function StatsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-bold text-gray-900">
-        {year}年{month}月の集計
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold text-gray-900">
+          {year}年{month}月の集計
+        </h1>
+        <Link
+          href="/monthly"
+          className="text-xs text-blue-600 hover:underline"
+        >
+          月次履歴 →
+        </Link>
+      </div>
 
       <Card>
         <CardHeader title="ポイントランキング" />
