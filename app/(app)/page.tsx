@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getDashboardData, getWeeklySchedule, getMonthlyHistory } from "@/actions/stats";
+import { getDashboardData, getWeeklySchedule, getDailyPointTrend } from "@/actions/stats";
 import { TaskOverview } from "@/components/dashboard/TaskOverview";
 import { RoommateStats } from "@/components/dashboard/RoommateStats";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
@@ -17,10 +17,10 @@ export default async function DashboardPage() {
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  const [data, weeklySchedule, monthlyHistory] = await Promise.all([
+  const [data, weeklySchedule, dailyTrend] = await Promise.all([
     getDashboardData(),
     getWeeklySchedule(),
-    getMonthlyHistory(year, month).catch(() => null),
+    getDailyPointTrend(year, month).catch(() => null),
   ]);
   const isSetupNeeded = data.tasks.length === 0;
 
@@ -82,10 +82,10 @@ export default async function DashboardPage() {
         />
 
         {/* 月次ポイント推移 */}
-        {monthlyHistory && monthlyHistory.trend.series.length > 0 && (
+        {dailyTrend && dailyTrend.series.length > 0 && (
           <MonthlyTrendPreview
-            months={monthlyHistory.trend.months}
-            series={monthlyHistory.trend.series}
+            days={dailyTrend.days}
+            series={dailyTrend.series}
             year={year}
             month={month}
           />

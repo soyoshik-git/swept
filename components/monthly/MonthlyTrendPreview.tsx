@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { TrendingUp, ChevronRight } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { TrendChart } from "./TrendChart";
+import { DailyTrendChart } from "./DailyTrendChart";
 
 type Props = {
-  months: { year: number; month: number; label: string }[];
-  series: { userId: string; name: string; data: (number | null)[] }[];
+  days: string[];
+  series: { userId: string; name: string; data: number[] }[];
   year: number;
   month: number;
 };
 
-export function MonthlyTrendPreview({ months, series, year, month }: Props) {
+export function MonthlyTrendPreview({ days, series, year, month }: Props) {
   if (series.length === 0) return null;
 
   return (
@@ -24,7 +24,7 @@ export function MonthlyTrendPreview({ months, series, year, month }: Props) {
               Monthly
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              ポイント推移
+              {month}月の日次ポイント推移
             </p>
           </div>
           <Link
@@ -44,7 +44,7 @@ export function MonthlyTrendPreview({ months, series, year, month }: Props) {
           tabIndex={-1}
           aria-label="月次履歴ページへ"
         >
-          <TrendChart months={months} series={series} />
+          <DailyTrendChart days={days} series={series} />
         </Link>
       </CardContent>
     </Card>

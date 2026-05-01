@@ -537,3 +537,74 @@ export async function getMonthlyHistory(year: number, month: number): Promise<Mo
 
   return { ranking, trend: { months, series }, isCurrentMonth, year, month };
 }
+
+export type DailyTrendData = {
+  days: string[];
+  series: { userId: string; name: string; data: number[] }[];
+};
+
+export async function getDailyPointTrend(year: number, month: number): Promise<DailyTrendData> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data: member } = await supabase
+    .from("users")
+    .select("room_id")
+    .eq("id", user.id)
+    .single();
+  if (!member?.room_id) throw new Error("Room not found");
+
+  const roomId = member.room_id;
+  const monthStart = new Date(year, month - 1, 1).toISOString();
+  const monthEnd = new Date(year, month, 1).toISOString();
+
+  const [{ data: allMembers }, { data: taskRows }] = await Promise.all([
+    supabase.from("users").select("id, name").eq("room_id", roomId),
+    supabase.from("tasks").select("id").eq("room_id", roomId),
+  ]);
+
+  const taskIds = (taskRows ?? []).map((t) => t.id);
+  if (!taskIds.length) return { days: [], series: [] };
+
+  const { data: completions } = await supabase
+    .from("completions")
+    .select("user_id, final_point, completed_at")
+    .in("task_id", taskIds)
+    .gte("completed_at", monthStart)
+    .lt("completed_at", monthEnd);
+
+  const now = new Date();
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
+  const lastDay = isCurrentMonth ? now.getDate() : new Date(year, month, 0).getDate();
+
+  const days: string[] = Array.from({ length: lastDay }, (_, i) => String(i + 1));
+
+  // user_id × day の日次ポイント集計
+  const dailyPoints: Record<string, Record<number, number>> = {};
+  for (const c of completions ?? []) {
+    const day = new Date(c.completed_at).getDate();
+    if (!dailyPoints[c.user_id]) dailyPoints[c.user_id] = {};
+    dailyPoints[c.user_id][day] = (dailyPoints[c.user_id][day] ?? 0) + (c.final_point ?? 0);
+  }
+
+  // 累計ポイントに変換（データを持つメンバーのみ）
+  const series = (allMembers ?? [])
+    .filter((m) => dailyPoints[m.id])
+    .map((m) => {
+      let cumulative = 0;
+      return {
+        userId: m.id,
+        name: m.name,
+        data: days.map((_, i) => {
+          cumulative += dailyPoints[m.id]?.[i + 1] ?? 0;
+          return cumulative;
+        }),
+      };
+    });
+
+  return { days, series };
+}

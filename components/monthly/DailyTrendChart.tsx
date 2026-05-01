@@ -8,14 +8,21 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { CHART_COLORS } from "./DailyTrendChart";
+
+export const CHART_COLORS = [
+  "#6366f1",
+  "#f43f5e",
+  "#10b981",
+  "#f59e0b",
+  "#8b5cf6",
+];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-background border border-border rounded-xl px-3 py-2 shadow-md text-xs space-y-1.5">
-      <p className="text-muted-foreground font-medium">{label}</p>
+      <p className="text-muted-foreground font-medium">{label}日</p>
       {payload.map(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (entry: any) => (
@@ -27,7 +34,7 @@ function ChartTooltip({ active, payload, label }: any) {
               />
               <span className="text-foreground">{entry.name}</span>
             </div>
-            <span className="font-semibold tabular-nums">{entry.value ?? "—"}pt</span>
+            <span className="font-semibold tabular-nums">{entry.value}pt</span>
           </div>
         ),
       )}
@@ -44,7 +51,7 @@ function ChartLegend({ payload }: any) {
       {payload.map((entry: any) => (
         <div key={entry.value} className="flex items-center gap-1.5">
           <span
-            className="w-3 rounded-full inline-block"
+            className="w-3 h-px rounded-full inline-block"
             style={{ background: entry.color, height: "2px" }}
           />
           <span className="text-[10px] text-muted-foreground">{entry.value}</span>
@@ -55,25 +62,28 @@ function ChartLegend({ payload }: any) {
 }
 
 type Props = {
-  months: { year: number; month: number; label: string }[];
-  series: { userId: string; name: string; data: (number | null)[] }[];
+  days: string[];
+  series: { userId: string; name: string; data: number[] }[];
 };
 
-export function TrendChart({ months, series }: Props) {
-  const data = months.map((m, i) => {
-    const entry: Record<string, string | number | null> = { label: m.label };
+export function DailyTrendChart({ days, series }: Props) {
+  const data = days.map((day, i) => {
+    const entry: Record<string, string | number> = { label: day };
     for (const s of series) {
       entry[s.userId] = s.data[i];
     }
     return entry;
   });
 
+  // X軸は5日おきのみ表示
+  const xTicks = days.filter((d) => Number(d) % 5 === 0 || d === "1");
+
   return (
-    <ResponsiveContainer width="100%" height={200}>
+    <ResponsiveContainer width="100%" height={160}>
       <AreaChart data={data} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
         <defs>
           {series.map((s, i) => (
-            <linearGradient key={s.userId} id={`trend-grad-${s.userId}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient key={s.userId} id={`daily-grad-${s.userId}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.12} />
               <stop offset="100%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0} />
             </linearGradient>
@@ -81,6 +91,7 @@ export function TrendChart({ months, series }: Props) {
         </defs>
         <XAxis
           dataKey="label"
+          ticks={xTicks}
           tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
           tickLine={false}
           axisLine={false}
@@ -94,11 +105,10 @@ export function TrendChart({ months, series }: Props) {
             dataKey={s.userId}
             name={s.name}
             stroke={CHART_COLORS[i % CHART_COLORS.length]}
-            strokeWidth={2}
-            fill={`url(#trend-grad-${s.userId})`}
-            dot={{ r: 3, fill: CHART_COLORS[i % CHART_COLORS.length], strokeWidth: 0 }}
-            activeDot={{ r: 4, strokeWidth: 0 }}
-            connectNulls={false}
+            strokeWidth={1.5}
+            fill={`url(#daily-grad-${s.userId})`}
+            dot={false}
+            activeDot={{ r: 3, strokeWidth: 0 }}
           />
         ))}
       </AreaChart>
