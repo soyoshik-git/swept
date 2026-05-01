@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import type { DashboardData, Stats, CompletionWithRelations } from "@/types/database";
+import type { DashboardData, Stats, CompletionWithRelations, User } from "@/types/database";
 
 export type ScheduleTask = {
   id: string;
@@ -379,4 +379,232 @@ export async function getDashboardData(): Promise<DashboardData> {
     overdueCount,
     memberCount: memberCount ?? 1,
   };
+}
+
+export type MonthlyHistoryData = {
+  ranking: Stats[];
+  trend: {
+    months: { year: number; month: number; label: string }[];
+    series: { userId: string; name: string; data: (number | null)[] }[];
+  };
+  isCurrentMonth: boolean;
+  year: number;
+  month: number;
+};
+
+export async function getMonthlyHistory(year: number, month: number): Promise<MonthlyHistoryData> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data: member } = await supabase
+    .from("users")
+    .select("room_id")
+    .eq("id", user.id)
+    .single();
+  if (!member?.room_id) throw new Error("Room not found");
+
+  const roomId = member.room_id;
+  const now = new Date();
+  const isCurrentMonth =
+    year === now.getFullYear() && month === now.getMonth() + 1;
+
+  // 表示月を末尾とした過去6ヶ月のウィンドウ
+  const months: { year: number; month: number; label: string }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    let m = month - i;
+    let y = year;
+    while (m <= 0) { m += 12; y--; }
+    months.push({ year: y, month: m, label: `${y}/${m}` });
+  }
+
+  const monthStart = new Date(year, month - 1, 1).toISOString();
+  const monthEnd = new Date(year, month, 1).toISOString();
+
+  const [
+    { data: allMembers },
+    { data: taskRows },
+    { data: monthStatsRaw },
+    { data: trendStatsRaw },
+  ] = await Promise.all([
+    supabase.from("users").select("id, name, avatar_url, room_id, line_user_id, created_at").eq("room_id", roomId),
+    supabase.from("tasks").select("id").eq("room_id", roomId),
+    supabase
+      .from("monthly_stats")
+      .select("*")
+      .eq("room_id", roomId)
+      .eq("year", year)
+      .eq("month", month),
+    supabase
+      .from("monthly_stats")
+      .select("user_id, year, month, net_point")
+      .eq("room_id", roomId),
+  ]);
+
+  const members = (allMembers ?? []) as User[];
+  const taskIds = (taskRows ?? []).map((t) => t.id);
+
+  // ランキング計算：monthly_stats があればそれを使用、なければ (当月の場合) completions から集計
+  let ranking: Stats[];
+  let livePointMap: Record<string, number> = {};
+
+  if (monthStatsRaw && monthStatsRaw.length > 0) {
+    const taskCountByUser: Record<string, number> = {};
+    if (taskIds.length) {
+      const { data: completions } = await supabase
+        .from("completions")
+        .select("user_id")
+        .in("task_id", taskIds)
+        .gte("completed_at", monthStart)
+        .lt("completed_at", monthEnd);
+      for (const c of completions ?? []) {
+        taskCountByUser[c.user_id] = (taskCountByUser[c.user_id] ?? 0) + 1;
+      }
+    }
+    const memberMap = Object.fromEntries(members.map((m) => [m.id, m]));
+    ranking = (monthStatsRaw as Stats[])
+      .map((s) => ({
+        ...s,
+        user: memberMap[s.user_id] as User,
+        task_count: taskCountByUser[s.user_id] ?? 0,
+      }))
+      .filter((s) => s.user)
+      .sort((a, b) => b.net_point - a.net_point);
+  } else if (isCurrentMonth && taskIds.length) {
+    const { data: completions } = await supabase
+      .from("completions")
+      .select("user_id, final_point")
+      .in("task_id", taskIds)
+      .gte("completed_at", monthStart);
+
+    const userAcc: Record<string, { total: number; count: number }> = {};
+    for (const c of completions ?? []) {
+      if (!userAcc[c.user_id]) userAcc[c.user_id] = { total: 0, count: 0 };
+      userAcc[c.user_id].total += c.final_point ?? 0;
+      userAcc[c.user_id].count += 1;
+    }
+    livePointMap = Object.fromEntries(
+      Object.entries(userAcc).map(([uid, v]) => [uid, v.total])
+    );
+    ranking = members
+      .filter((m) => userAcc[m.id])
+      .map((m) => ({
+        id: `live-${m.id}`,
+        room_id: roomId,
+        user_id: m.id,
+        year,
+        month,
+        total_point: userAcc[m.id].total,
+        penalty_pt: 0,
+        net_point: userAcc[m.id].total,
+        user: m,
+        task_count: userAcc[m.id].count,
+      }))
+      .sort((a, b) => b.net_point - a.net_point);
+  } else {
+    ranking = [];
+  }
+
+  // トレンド: monthly_stats から対象6ヶ月を抽出
+  const monthSet = new Set(months.map((m) => `${m.year}-${m.month}`));
+  const trendStats = (trendStatsRaw ?? []).filter((s) =>
+    monthSet.has(`${s.year}-${s.month}`)
+  );
+
+  const trendMap: Record<string, Record<string, number>> = {};
+  for (const stat of trendStats) {
+    if (!trendMap[stat.user_id]) trendMap[stat.user_id] = {};
+    trendMap[stat.user_id][`${stat.year}-${stat.month}`] = stat.net_point;
+  }
+  // 当月の暫定値をトレンドにも反映
+  if (isCurrentMonth) {
+    for (const [uid, pt] of Object.entries(livePointMap)) {
+      if (!trendMap[uid]) trendMap[uid] = {};
+      trendMap[uid][`${year}-${month}`] = pt;
+    }
+  }
+
+  const series = members
+    .filter((m) => Object.keys(trendMap[m.id] ?? {}).length > 0)
+    .map((m) => ({
+      userId: m.id,
+      name: m.name,
+      data: months.map(({ year: y, month: mo }) => trendMap[m.id]?.[`${y}-${mo}`] ?? null),
+    }));
+
+  return { ranking, trend: { months, series }, isCurrentMonth, year, month };
+}
+
+export type DailyTrendData = {
+  days: string[];
+  series: { userId: string; name: string; data: number[] }[];
+};
+
+export async function getDailyPointTrend(year: number, month: number): Promise<DailyTrendData> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data: member } = await supabase
+    .from("users")
+    .select("room_id")
+    .eq("id", user.id)
+    .single();
+  if (!member?.room_id) throw new Error("Room not found");
+
+  const roomId = member.room_id;
+  const monthStart = new Date(year, month - 1, 1).toISOString();
+  const monthEnd = new Date(year, month, 1).toISOString();
+
+  const [{ data: allMembers }, { data: taskRows }] = await Promise.all([
+    supabase.from("users").select("id, name").eq("room_id", roomId),
+    supabase.from("tasks").select("id").eq("room_id", roomId),
+  ]);
+
+  const taskIds = (taskRows ?? []).map((t) => t.id);
+  if (!taskIds.length) return { days: [], series: [] };
+
+  const { data: completions } = await supabase
+    .from("completions")
+    .select("user_id, final_point, completed_at")
+    .in("task_id", taskIds)
+    .gte("completed_at", monthStart)
+    .lt("completed_at", monthEnd);
+
+  const now = new Date();
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
+  const lastDay = isCurrentMonth ? now.getDate() : new Date(year, month, 0).getDate();
+
+  const days: string[] = Array.from({ length: lastDay }, (_, i) => String(i + 1));
+
+  // user_id × day の日次ポイント集計
+  const dailyPoints: Record<string, Record<number, number>> = {};
+  for (const c of completions ?? []) {
+    const day = new Date(c.completed_at).getDate();
+    if (!dailyPoints[c.user_id]) dailyPoints[c.user_id] = {};
+    dailyPoints[c.user_id][day] = (dailyPoints[c.user_id][day] ?? 0) + (c.final_point ?? 0);
+  }
+
+  // 累計ポイントに変換（データを持つメンバーのみ）
+  const series = (allMembers ?? [])
+    .filter((m) => dailyPoints[m.id])
+    .map((m) => {
+      let cumulative = 0;
+      return {
+        userId: m.id,
+        name: m.name,
+        data: days.map((_, i) => {
+          cumulative += dailyPoints[m.id]?.[i + 1] ?? 0;
+          return cumulative;
+        }),
+      };
+    });
+
+  return { days, series };
 }

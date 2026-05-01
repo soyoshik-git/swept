@@ -1,20 +1,26 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getDashboardData, getWeeklySchedule } from "@/actions/stats";
+import { getDashboardData, getWeeklySchedule, getDailyPointTrend } from "@/actions/stats";
 import { TaskOverview } from "@/components/dashboard/TaskOverview";
 import { RoommateStats } from "@/components/dashboard/RoommateStats";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { NeglectedTasks } from "@/components/dashboard/NeglectedTasks";
 import { WeeklySchedule } from "@/components/dashboard/WeeklySchedule";
+import { MonthlyTrendPreview } from "@/components/monthly/MonthlyTrendPreview";
 import { PageTransition } from "@/components/ui/PageTransition";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [data, weeklySchedule] = await Promise.all([
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  const [data, weeklySchedule, dailyTrend] = await Promise.all([
     getDashboardData(),
     getWeeklySchedule(),
+    getDailyPointTrend(year, month).catch(() => null),
   ]);
   const isSetupNeeded = data.tasks.length === 0;
 
@@ -73,6 +79,14 @@ export default async function DashboardPage() {
           completions={data.recentCompletions}
           currentUserId={user?.id}
           memberCount={data.memberCount}
+        />
+
+        {/* 月次ポイント推移（データなし時もプレースホルダー表示） */}
+        <MonthlyTrendPreview
+          days={dailyTrend?.days ?? []}
+          series={dailyTrend?.series ?? []}
+          year={year}
+          month={month}
         />
       </div>
     </PageTransition>
