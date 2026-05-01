@@ -13,8 +13,6 @@ type Props = {
 };
 
 export function MonthlyTrendPreview({ days, series, year, month }: Props) {
-  if (series.length === 0) return null;
-
   return (
     <Card className="border shadow-sm overflow-hidden">
       <CardHeader className="px-4 pb-3">

@@ -81,15 +81,13 @@ export default async function DashboardPage() {
           memberCount={data.memberCount}
         />
 
-        {/* 月次ポイント推移 */}
-        {dailyTrend && dailyTrend.series.length > 0 && (
-          <MonthlyTrendPreview
-            days={dailyTrend.days}
-            series={dailyTrend.series}
-            year={year}
-            month={month}
-          />
-        )}
+        {/* 月次ポイント推移（データなし時もプレースホルダー表示） */}
+        <MonthlyTrendPreview
+          days={dailyTrend?.days ?? []}
+          series={dailyTrend?.series ?? []}
+          year={year}
+          month={month}
+        />
       </div>
     </PageTransition>
   );
