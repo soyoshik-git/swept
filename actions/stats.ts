@@ -577,9 +577,7 @@ export async function getDailyPointTrend(year: number, month: number): Promise<D
     .gte("completed_at", monthStart)
     .lt("completed_at", monthEnd);
 
-  const now = new Date();
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
-  const lastDay = isCurrentMonth ? now.getDate() : new Date(year, month, 0).getDate();
+  const lastDay = new Date(year, month, 0).getDate();
 
   const days: string[] = Array.from({ length: lastDay }, (_, i) => String(i + 1));
 
