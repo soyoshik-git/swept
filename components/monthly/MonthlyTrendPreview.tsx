@@ -1,9 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { TrendingUp, ChevronRight } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { DailyTrendChart } from "./DailyTrendChart";
+
+const DailyTrendChart = dynamic(
+  () => import("./DailyTrendChart").then((m) => ({ default: m.DailyTrendChart })),
+  { ssr: false, loading: () => <div className="h-[160px]" /> },
+);
 
 type Props = {
   days: string[];
