@@ -540,7 +540,7 @@ export async function getMonthlyHistory(year: number, month: number): Promise<Mo
 
 export type DailyTrendData = {
   days: string[];
-  series: { userId: string; name: string; data: number[] }[];
+  series: { userId: string; name: string; data: (number | null)[] }[];
 };
 
 export async function getDailyPointTrend(year: number, month: number): Promise<DailyTrendData> {
@@ -577,9 +577,10 @@ export async function getDailyPointTrend(year: number, month: number): Promise<D
     .gte("completed_at", monthStart)
     .lt("completed_at", monthEnd);
 
+  const lastDay = new Date(year, month, 0).getDate();
   const now = new Date();
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
-  const lastDay = isCurrentMonth ? now.getDate() : new Date(year, month, 0).getDate();
+  const todayDay = isCurrentMonth ? now.getDate() : lastDay;
 
   const days: string[] = Array.from({ length: lastDay }, (_, i) => String(i + 1));
 
@@ -591,7 +592,7 @@ export async function getDailyPointTrend(year: number, month: number): Promise<D
     dailyPoints[c.user_id][day] = (dailyPoints[c.user_id][day] ?? 0) + (c.final_point ?? 0);
   }
 
-  // 累計ポイントに変換（データを持つメンバーのみ）
+  // 累計ポイントに変換（データを持つメンバーのみ、今日より先は null）
   const series = (allMembers ?? [])
     .filter((m) => dailyPoints[m.id])
     .map((m) => {
@@ -600,7 +601,9 @@ export async function getDailyPointTrend(year: number, month: number): Promise<D
         userId: m.id,
         name: m.name,
         data: days.map((_, i) => {
-          cumulative += dailyPoints[m.id]?.[i + 1] ?? 0;
+          const day = i + 1;
+          if (day > todayDay) return null;
+          cumulative += dailyPoints[m.id]?.[day] ?? 0;
           return cumulative;
         }),
       };

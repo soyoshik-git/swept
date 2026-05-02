@@ -7,7 +7,7 @@ import { DailyTrendChart } from "./DailyTrendChart";
 
 type Props = {
   days: string[];
-  series: { userId: string; name: string; data: number[] }[];
+  series: { userId: string; name: string; data: (number | null)[] }[];
   year: number;
   month: number;
 };
