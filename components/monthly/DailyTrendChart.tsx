@@ -92,7 +92,7 @@ function Chart({ days, series, colors }: { days: string[]; series: Series[]; col
 
   return (
     <ResponsiveContainer width="100%" height={160}>
-      <AreaChart data={data} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
+      <AreaChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
         <defs>
           {series.map((s, i) => (
             <linearGradient key={s.userId} id={`daily-grad-${s.userId}`} x1="0" y1="0" x2="0" y2="1">
