@@ -74,7 +74,7 @@ function ChartLegend({ payload }: any) {
   );
 }
 
-type Series = { userId: string; name: string; data: number[] };
+type Series = { userId: string; name: string; data: (number | null)[] };
 
 type Props = {
   days: string[];
@@ -83,8 +83,8 @@ type Props = {
 
 function Chart({ days, series, colors }: { days: string[]; series: Series[]; colors: string[] }) {
   const data = days.map((day, i) => {
-    const entry: Record<string, string | number> = { label: day };
-    for (const s of series) entry[s.userId] = s.data[i];
+    const entry: Record<string, string | number | null> = { label: day };
+    for (const s of series) entry[s.userId] = s.data[i] ?? null;
     return entry;
   });
 
@@ -121,6 +121,7 @@ function Chart({ days, series, colors }: { days: string[]; series: Series[]; col
             fill={`url(#daily-grad-${s.userId})`}
             dot={false}
             activeDot={{ r: 3, strokeWidth: 0 }}
+            connectNulls={false}
           />
         ))}
       </AreaChart>
