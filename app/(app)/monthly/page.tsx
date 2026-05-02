@@ -1,8 +1,13 @@
+import dynamic from "next/dynamic";
 import { getMonthlyHistory } from "@/actions/stats";
 import { Card, CardHeaderCompat as CardHeader } from "@/components/ui/Card";
 import { MonthNavigator } from "@/components/monthly/MonthNavigator";
-import { TrendChart } from "@/components/monthly/TrendChart";
 import { displayPt } from "@/lib/utils";
+
+const TrendChart = dynamic(
+  () => import("@/components/monthly/TrendChart").then((m) => ({ default: m.TrendChart })),
+  { ssr: false, loading: () => <div className="h-[200px]" /> },
+);
 
 export default async function MonthlyPage({
   searchParams,
