@@ -18,12 +18,12 @@ describe("calcStaleMultiplier", () => {
     expect(calcStaleMultiplier(13, 7)).toBe(1.0);
   });
 
-  it("放置日数が推奨頻度の2倍以上3倍未満なら1.5", () => {
+  it("放置日数が推奨頻度の2倍以上3倍未満なら1.5（デフォルトmax=2.0）", () => {
     expect(calcStaleMultiplier(14, 7)).toBe(1.5);
     expect(calcStaleMultiplier(20, 7)).toBe(1.5);
   });
 
-  it("放置日数が推奨頻度の3倍以上なら2.0", () => {
+  it("放置日数が推奨頻度の3倍以上なら2.0（デフォルトmax=2.0）", () => {
     expect(calcStaleMultiplier(21, 7)).toBe(2.0);
     expect(calcStaleMultiplier(100, 7)).toBe(2.0);
   });
@@ -33,6 +33,16 @@ describe("calcStaleMultiplier", () => {
     expect(calcStaleMultiplier(1, 1)).toBe(1.0);
     expect(calcStaleMultiplier(2, 1)).toBe(1.5);
     expect(calcStaleMultiplier(3, 1)).toBe(2.0);
+  });
+
+  it("bonusMax=1.5の場合", () => {
+    expect(calcStaleMultiplier(14, 7, 1.5)).toBe(1.3);
+    expect(calcStaleMultiplier(21, 7, 1.5)).toBe(1.5);
+  });
+
+  it("bonusMax=3.0の場合", () => {
+    expect(calcStaleMultiplier(14, 7, 3.0)).toBe(2.0);
+    expect(calcStaleMultiplier(21, 7, 3.0)).toBe(3.0);
   });
 });
 

@@ -55,7 +55,7 @@ export function TaskSettingsSection({ bonusMultiplierMax: initialMax }: Props) {
                     type="range"
                     min={1.0}
                     max={3.0}
-                    step={0.5}
+                    step={0.1}
                     value={tempValue}
                     onChange={(e) => setTempValue(parseFloat(e.target.value))}
                     className="flex-1 accent-primary"
@@ -65,7 +65,7 @@ export function TaskSettingsSection({ bonusMultiplierMax: initialMax }: Props) {
                   </span>
                 </div>
                 <div className="flex justify-between text-[10px] text-muted-foreground px-0.5">
-                  <span>1.0x</span><span>1.5x</span><span>2.0x</span><span>2.5x</span><span>3.0x</span>
+                  <span>1.0x</span><span>2.0x</span><span>3.0x</span>
                 </div>
                 <div className="flex gap-2 pt-1">
                   <button

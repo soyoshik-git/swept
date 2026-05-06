@@ -1,12 +1,12 @@
 /**
  * 放置ボーナス倍率を計算する
- * staleDays < frequencyDays       → 1.0
- * staleDays >= frequencyDays * 2  → 1.5
- * staleDays >= frequencyDays * 3  → 2.0
+ * staleDays < frequencyDays * 2  → 1.0
+ * staleDays >= frequencyDays * 2 → 1.0 + (bonusMax - 1.0) * 0.5
+ * staleDays >= frequencyDays * 3 → bonusMax
  */
-export function calcStaleMultiplier(staleDays: number, frequencyDays: number): number {
-  if (staleDays >= frequencyDays * 3) return 2.0;
-  if (staleDays >= frequencyDays * 2) return 1.5;
+export function calcStaleMultiplier(staleDays: number, frequencyDays: number, bonusMax = 2.0): number {
+  if (staleDays >= frequencyDays * 3) return bonusMax;
+  if (staleDays >= frequencyDays * 2) return Math.round((1.0 + (bonusMax - 1.0) * 0.5) * 10) / 10;
   return 1.0;
 }
 
@@ -20,8 +20,9 @@ export function calcFinalPoint(
   frequencyDays: number,
   ngCount: number,
   totalMembers: number,
+  bonusMax = 2.0,
 ): number {
-  const multiplier = calcStaleMultiplier(staleDays, frequencyDays);
+  const multiplier = calcStaleMultiplier(staleDays, frequencyDays, bonusMax);
   const ngPenalty = totalMembers > 0 ? ngCount / totalMembers : 0;
   return Math.floor(basePoint * multiplier * (1 - ngPenalty));
 }
