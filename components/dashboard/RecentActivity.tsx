@@ -329,7 +329,7 @@ export function RecentActivity({
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  {completion.task.name}を完了
+                  {completion.free_task_name ?? completion.task.name}を完了
                   {completion.final_point != null && (
                     <span className="ml-1 text-accent font-medium">+{displayPt(completion.final_point)}pt</span>
                   )}

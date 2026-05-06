@@ -60,7 +60,7 @@ export function RecentCompletions({ completions }: Props) {
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{c.task.name}</p>
+              <p className="text-sm font-semibold truncate">{c.free_task_name ?? c.task.name}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {c.user.name} · {timeAgo(c.completed_at)}
               </p>

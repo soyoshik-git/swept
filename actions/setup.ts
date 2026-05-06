@@ -47,6 +47,16 @@ export async function setupCreateRoom(name: string): Promise<void> {
   );
   if (userError) throw new Error(userError.message);
 
+  // フリータスクを自動作成
+  await admin.from("tasks").insert({
+    room_id: room.id,
+    name: "その他",
+    base_point: 0,
+    frequency_days: 9999,
+    is_free_task: true,
+    is_active: true,
+  });
+
   revalidatePath("/");
 }
 

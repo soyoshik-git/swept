@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { getStaleBadgeVariant, formatStaleDays, formatWeekdays } from "@/lib/utils";
 import { TaskMemoButton } from "@/components/tasks/TaskMemoButton";
+import { FreeTaskEntry } from "@/components/tasks/FreeTaskEntry";
 
 export default async function TasksPage() {
   const supabase = await createClient();
@@ -41,9 +42,9 @@ export default async function TasksPage() {
 
   const now = new Date();
 
-  // 固定担当タスクは自分のものだけ表示
+  // フリータスク・固定担当タスク（他人）を除外
   const visibleTasks = (tasks ?? []).filter(
-    (t) => !t.is_fixed_assign || t.assigned_user_id === user!.id
+    (t) => !t.is_free_task && (!t.is_fixed_assign || t.assigned_user_id === user!.id)
   );
 
   const tasksWithStale = visibleTasks
@@ -160,6 +161,16 @@ export default async function TasksPage() {
               </div>
             );
           })}
+
+          {/* フリータスク */}
+          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="px-4 py-2 bg-muted/50 border-b border-border">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                フリータスク
+              </span>
+            </div>
+            <FreeTaskEntry />
+          </div>
         </div>
       )}
     </div>
