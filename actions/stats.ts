@@ -149,7 +149,8 @@ export async function getWeeklySchedule(): Promise<WeeklyScheduleData> {
     .from("tasks")
     .select("id, name, space, base_point, frequency_days, weekdays, is_fixed_assign, assigned_user_id, created_at")
     .eq("room_id", member.room_id)
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .eq("is_free_task", false);
 
   const taskIds = (tasksRaw ?? []).map((t) => t.id);
 
@@ -299,7 +300,8 @@ export async function getDashboardData(): Promise<DashboardData> {
       .from("tasks")
       .select("*")
       .eq("room_id", member.room_id)
-      .eq("is_active", true),
+      .eq("is_active", true)
+      .eq("is_free_task", false),
     supabase
       .from("completions")
       .select("id", { count: "exact", head: true })

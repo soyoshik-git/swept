@@ -130,6 +130,91 @@ export async function completeTask(taskId: string): Promise<Completion> {
   return completion;
 }
 
+/** フリータスクを完了する */
+export async function completeFreeTask(data: {
+  name: string;
+  notes: string | null;
+  point: number;
+}): Promise<void> {
+  const { name, notes, point } = data;
+  if (!name.trim()) throw new Error("タスク名を入力してください");
+  if (![10, 20, 30, 40].includes(point)) throw new Error("ポイントは10・20・30・40のいずれかを指定してください");
+
+  const supabase = await createClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser) throw new Error("Unauthorized");
+
+  const { data: member } = await supabase
+    .from("users")
+    .select("id, name, room_id")
+    .eq("id", authUser.id)
+    .single();
+  if (!member) throw new Error("User not found");
+
+  // ルームのフリータスクを取得
+  const { data: freeTask } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("room_id", member.room_id)
+    .eq("is_free_task", true)
+    .single();
+  if (!freeTask) throw new Error("フリータスクが見つかりません");
+
+  const { data: completion, error } = await supabase
+    .from("completions")
+    .insert({
+      task_id: freeTask.id,
+      user_id: authUser.id,
+      base_point: point,
+      stale_days: 0,
+      final_point: point,
+      free_task_name: name.trim(),
+      notes: notes?.trim() || null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  // monthly_stats を更新
+  const admin = createAdminClient();
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  const { data: existingStat } = await admin
+    .from("monthly_stats")
+    .select("id, total_point, penalty_pt, net_point")
+    .eq("room_id", member.room_id)
+    .eq("user_id", authUser.id)
+    .eq("year", year)
+    .eq("month", month)
+    .maybeSingle();
+
+  if (existingStat) {
+    const newTotal = (existingStat.total_point ?? 0) + point;
+    const penaltyPt = existingStat.penalty_pt ?? 0;
+    await admin
+      .from("monthly_stats")
+      .update({ total_point: newTotal, net_point: newTotal - penaltyPt })
+      .eq("id", existingStat.id);
+  } else {
+    await admin.from("monthly_stats").insert({
+      room_id: member.room_id,
+      user_id: authUser.id,
+      year,
+      month,
+      total_point: point,
+      penalty_pt: 0,
+      net_point: point,
+    });
+  }
+
+  revalidatePath("/");
+  revalidatePath("/completions");
+  revalidatePath("/activity");
+  void completion;
+}
+
 /** 自分の完了を取り消す */
 export async function undoCompletion(completionId: string): Promise<void> {
   const supabase = await createClient();

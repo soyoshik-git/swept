@@ -27,6 +27,7 @@ export type Task = {
   weekdays: number[] | null;  // 0=日,1=月,2=火,3=水,4=木,5=金,6=土
   assigned_user_id: string | null;
   is_fixed_assign: boolean;
+  is_free_task: boolean;
   is_active: boolean;
   created_at: string;
 };
@@ -40,6 +41,8 @@ export type Completion = {
   stale_days: number;
   final_point: number | null;
   is_penalized: boolean;
+  free_task_name: string | null;
+  notes: string | null;
 };
 
 export type NgVote = {
