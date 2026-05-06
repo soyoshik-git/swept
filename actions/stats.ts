@@ -300,7 +300,8 @@ export async function getDashboardData(): Promise<DashboardData> {
       .from("tasks")
       .select("*")
       .eq("room_id", member.room_id)
-      .eq("is_active", true),
+      .eq("is_active", true)
+      .eq("is_free_task", false),
     supabase
       .from("completions")
       .select("id", { count: "exact", head: true })
