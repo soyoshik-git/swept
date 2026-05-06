@@ -18,7 +18,7 @@ export async function completeTask(taskId: string): Promise<Completion> {
   // タスク・ルーム情報を取得
   const { data: task } = await supabase
     .from("tasks")
-    .select("*, room:rooms(id, line_group_id)")
+    .select("*, room:rooms(id, line_group_id, bonus_multiplier_max)")
     .eq("id", taskId)
     .single();
   if (!task) throw new Error("Task not found");
@@ -59,12 +59,14 @@ export async function completeTask(taskId: string): Promise<Completion> {
       )
     : 0;
 
+  const bonusMax = (task.room as { bonus_multiplier_max?: number } | null)?.bonus_multiplier_max ?? 2.0;
   const finalPoint = calcFinalPoint(
     task.base_point,
     staleDays,
     task.frequency_days,
     0,
     totalMembers ?? 1,
+    bonusMax,
   );
 
   // 完了ログを保存
