@@ -145,12 +145,12 @@ export async function getWeeklySchedule(): Promise<WeeklyScheduleData> {
   monday.setHours(0, 0, 0, 0);
 
   // タスク一覧を取得
-  const { data: tasksRaw } = await supabase
+  const { data: tasksRawAll } = await supabase
     .from("tasks")
-    .select("id, name, space, base_point, frequency_days, weekdays, is_fixed_assign, assigned_user_id, created_at")
+    .select("id, name, space, base_point, frequency_days, weekdays, is_fixed_assign, assigned_user_id, created_at, is_free_task")
     .eq("room_id", member.room_id)
-    .eq("is_active", true)
-    .eq("is_free_task", false);
+    .eq("is_active", true);
+  const tasksRaw = (tasksRawAll ?? []).filter((t) => !(t as unknown as { is_free_task?: boolean }).is_free_task);
 
   const taskIds = (tasksRaw ?? []).map((t) => t.id);
 
@@ -300,8 +300,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       .from("tasks")
       .select("*")
       .eq("room_id", member.room_id)
-      .eq("is_active", true)
-      .eq("is_free_task", false),
+      .eq("is_active", true),
     supabase
       .from("completions")
       .select("id", { count: "exact", head: true })
@@ -319,7 +318,8 @@ export async function getDashboardData(): Promise<DashboardData> {
       .eq("room_id", member.room_id),
   ]);
 
-  const taskIds = (tasksRaw ?? []).map((t) => t.id);
+  const nonFreeTasks = (tasksRaw ?? []).filter((t) => !(t as unknown as { is_free_task?: boolean }).is_free_task);
+  const taskIds = nonFreeTasks.map((t) => t.id);
 
   // ─── Step2: 並列取得（最終完了マップ・最近の完了・今月の完了） ───
   const [lastCompletionMap, recentCompletionsData, monthlyCompletionsData] = await Promise.all([
@@ -342,7 +342,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   ]);
 
   // stale_days をメモリで計算（クエリなし）
-  const tasks = (tasksRaw ?? []).map((task) => {
+  const tasks = nonFreeTasks.map((task) => {
     const lastAt = lastCompletionMap[task.id] ?? null;
     const weekdays: number[] = (task as unknown as { weekdays: number[] | null }).weekdays ?? [];
     const staleDays = weekdays.length > 0
