@@ -52,12 +52,12 @@ export async function completeTask(taskId: string): Promise<Completion> {
     .maybeSingle();
 
   const now = new Date();
-  const staleDays = lastCompletion
-    ? Math.floor(
-        (now.getTime() - new Date(lastCompletion.completed_at).getTime()) /
-          (1000 * 60 * 60 * 24),
-      )
-    : 0;
+  const referenceDate = lastCompletion
+    ? new Date(lastCompletion.completed_at)
+    : new Date(task.created_at);
+  const staleDays = Math.floor(
+    (now.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
 
   const bonusMax = (task.room as { bonus_multiplier_max?: number } | null)?.bonus_multiplier_max ?? 2.0;
   const finalPoint = calcFinalPoint(
