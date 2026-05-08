@@ -114,4 +114,5 @@ export type DashboardData = {
   myRank: number;
   overdueCount: number;
   memberCount: number;
+  bonusMax: number;
 };
