@@ -71,7 +71,7 @@ export default async function DashboardPage() {
 
         {/* 放置タスク */}
         {neglectedTasks.length > 0 && (
-          <NeglectedTasks tasks={neglectedTasks} />
+          <NeglectedTasks tasks={neglectedTasks} bonusMax={data.bonusMax} />
         )}
 
         {/* アクティビティ */}

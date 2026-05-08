@@ -215,6 +215,28 @@ export async function completeFreeTask(data: {
   void completion;
 }
 
+/** 放置タスクの放置日数をリセットする（ポイントなし） */
+export async function skipTask(taskId: string): Promise<void> {
+  const supabase = await createClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser) throw new Error("Unauthorized");
+
+  const { error } = await supabase
+    .from("completions")
+    .insert({
+      task_id: taskId,
+      user_id: authUser.id,
+      base_point: 0,
+      stale_days: 0,
+      final_point: 0,
+      notes: "__skip__",
+    });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/");
+}
+
 /** 自分の完了を取り消す */
 export async function undoCompletion(completionId: string): Promise<void> {
   const supabase = await createClient();

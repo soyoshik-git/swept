@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { AlertTriangle, Flame, Sparkles, Check } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { AlertTriangle, Flame, Sparkles, Check, RotateCcw } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { completeTask } from "@/actions/completions";
+import { completeTask, skipTask } from "@/actions/completions";
+import { calcFinalPoint, calcStaleMultiplier } from "@/lib/points";
 import { overlay, slideUp, sheetSpring, softSpring, fastFade, staggerContainer, fadeUp, spring } from "@/lib/animate";
 import { displayPt } from "@/lib/utils";
 
@@ -18,23 +19,26 @@ type NeglectedTask = {
   base_point: number;
 };
 
-function getBonusLevel(staleDays: number, frequencyDays: number) {
-  const ratio = staleDays / frequencyDays;
-  if (ratio >= 2) return { label: "激熱", color: "bg-red-500 text-white", icon: Flame };
-  if (ratio >= 1.5) return { label: "高ボーナス", color: "bg-orange-500 text-white", icon: Sparkles };
+function getBonusLevel(staleDays: number, frequencyDays: number, bonusMax: number) {
+  const multiplier = calcStaleMultiplier(staleDays, frequencyDays, bonusMax);
+  if (multiplier >= bonusMax) return { label: "激熱", color: "bg-red-500 text-white", icon: Flame };
+  if (multiplier > 1.0) return { label: "高ボーナス", color: "bg-orange-500 text-white", icon: Sparkles };
   return { label: "ボーナス", color: "bg-amber-400 text-amber-900", icon: Sparkles };
 }
 
-function calcBonusPoints(staleDays: number, basePoint: number): number {
-  return Math.floor(Math.min(staleDays * 2, basePoint * 2));
-}
-
-export function NeglectedTasks({ tasks: initialTasks }: { tasks: NeglectedTask[] }) {
+export function NeglectedTasks({
+  tasks: initialTasks,
+  bonusMax = 2.0,
+}: {
+  tasks: NeglectedTask[];
+  bonusMax?: number;
+}) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
   const [confirmTask, setConfirmTask] = useState<NeglectedTask | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const activeTasks = initialTasks.filter((t) => !completedIds.has(t.id));
+  const activeTasks = initialTasks.filter((t) => !completedIds.has(t.id) && !skippedIds.has(t.id));
 
   function handleConfirm() {
     if (!confirmTask) return;
@@ -43,6 +47,13 @@ export function NeglectedTasks({ tasks: initialTasks }: { tasks: NeglectedTask[]
       await completeTask(taskId);
       setCompletedIds((prev) => new Set([...prev, taskId]));
       setConfirmTask(null);
+    });
+  }
+
+  function handleSkip(taskId: string) {
+    startTransition(async () => {
+      await skipTask(taskId);
+      setSkippedIds((prev) => new Set([...prev, taskId]));
     });
   }
 
@@ -73,10 +84,9 @@ export function NeglectedTasks({ tasks: initialTasks }: { tasks: NeglectedTask[]
           >
             <AnimatePresence mode="popLayout">
               {activeTasks.map((task, index) => {
-                const bonus = getBonusLevel(task.stale_days, task.frequency_days);
+                const bonus = getBonusLevel(task.stale_days, task.frequency_days, bonusMax);
                 const BonusIcon = bonus.icon;
-                const bonusPoints = calcBonusPoints(task.stale_days, task.base_point);
-                const totalPoints = task.base_point + bonusPoints;
+                const totalPoints = calcFinalPoint(task.base_point, task.stale_days, task.frequency_days, 0, 1, bonusMax);
 
                 return (
                   <motion.div
@@ -105,15 +115,27 @@ export function NeglectedTasks({ tasks: initialTasks }: { tasks: NeglectedTask[]
                         <span className="text-base font-bold text-primary">+{displayPt(totalPoints)}</span>
                         <span className="text-[10px] text-muted-foreground ml-0.5">pt</span>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs px-2"
-                        onClick={() => setConfirmTask(task)}
-                        disabled={isPending}
-                      >
-                        <Check className="h-3 w-3 mr-1" />やる
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs px-2 text-muted-foreground"
+                          onClick={() => handleSkip(task.id)}
+                          disabled={isPending}
+                          title="汚れていないのでリセット"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs px-2"
+                          onClick={() => setConfirmTask(task)}
+                          disabled={isPending}
+                        >
+                          <Check className="h-3 w-3 mr-1" />やる
+                        </Button>
+                      </div>
                     </div>
                   </motion.div>
                 );
@@ -175,7 +197,7 @@ export function NeglectedTasks({ tasks: initialTasks }: { tasks: NeglectedTask[]
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.22 }}
                 >
-                  +{displayPt(confirmTask.base_point + calcBonusPoints(confirmTask.stale_days, confirmTask.base_point))}pt
+                  +{displayPt(calcFinalPoint(confirmTask.base_point, confirmTask.stale_days, confirmTask.frequency_days, 0, 1, bonusMax))}pt
                 </motion.p>
               </motion.div>
 

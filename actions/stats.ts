@@ -116,6 +116,7 @@ export async function getAllCompletions(page = 0, pageSize = 50) {
     .from("completions")
     .select("*, task:tasks(*), user:users(*), ng_votes(id, user_id, reason)")
     .in("task_id", ids)
+    .not("notes", "eq", "__skip__")
     .order("completed_at", { ascending: false })
     .range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -258,9 +259,11 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const { data: member } = await supabase
     .from("users")
-    .select("room_id")
+    .select("room_id, room:rooms(bonus_multiplier_max)")
     .eq("id", user.id)
     .single();
+
+  const bonusMax = (member?.room as unknown as { bonus_multiplier_max?: number } | null)?.bonus_multiplier_max ?? 2.0;
 
   if (!member?.room_id) {
     return {
@@ -273,6 +276,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       myRank: 0,
       overdueCount: 0,
       memberCount: 0,
+      bonusMax,
     };
   }
 
@@ -371,16 +375,20 @@ export async function getDashboardData(): Promise<DashboardData> {
   const myTotalPoint = myStatIndex >= 0 ? statsWithCount[myStatIndex].net_point : 0;
   const myRank = myStatIndex >= 0 ? myStatIndex + 1 : 0;
 
+  const allRecentCompletions = (recentCompletionsData as { data: CompletionWithRelations[] | null }).data ?? [];
+  const recentCompletions = allRecentCompletions.filter((c) => c.notes !== "__skip__");
+
   return {
     monthlyStats: statsWithCount as Stats[],
     tasks,
-    recentCompletions: ((recentCompletionsData as { data: CompletionWithRelations[] | null }).data ?? []),
+    recentCompletions,
     completionCount: completionCount ?? 0,
     myTotalPoint,
     myPenaltyCount: myPenaltyCount ?? 0,
     myRank,
     overdueCount,
     memberCount: memberCount ?? 1,
+    bonusMax,
   };
 }
 
