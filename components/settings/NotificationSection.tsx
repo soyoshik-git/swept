@@ -89,9 +89,15 @@ export function NotificationSection({ lineGroupId }: Props) {
           )}
         </div>
 
+        {lineGroupId && (
+          <div className="px-3 pb-3 text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 mb-2">
+            グループを変更したい場合は「解除」→ 新しいグループで <span className="font-medium text-foreground">「連携」</span> とメッセージを送ってください。
+          </div>
+        )}
+
         {!lineGroupId && (
           <div className="px-3 pb-3 text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 mb-2">
-            LINEグループに <span className="font-medium text-foreground">Swept Bot</span> を追加すると自動で連携されます。通知はグループ全員に送信されます。
+            LINEグループに <span className="font-medium text-foreground">Swept Bot</span> を追加すると自動で連携されます。または <span className="font-medium text-foreground">「連携」</span> とメッセージを送っても連携できます。
           </div>
         )}
 
