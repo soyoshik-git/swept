@@ -33,7 +33,7 @@ export default function SetupPage() {
   // Step 2
   const [taskName, setTaskName] = useState("");
   const [taskSpace, setTaskSpace] = useState("");
-  const [basePoint, setBasePoint] = useState(3);
+  const [basePoint, setBasePoint] = useState(10);
   const [frequencyDays, setFrequencyDays] = useState(7);
 
   // Step 3
@@ -246,11 +246,11 @@ export default function SetupPage() {
                       onChange={(e) => setBasePoint(Number(e.target.value))}
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value={1}>1（簡単）</option>
-                      <option value={2}>2</option>
-                      <option value={3}>3（普通）</option>
-                      <option value={5}>5</option>
-                      <option value={8}>8（大変）</option>
+                      <option value={5}>5（楽）</option>
+                      <option value={10}>10（普通）</option>
+                      <option value={20}>20（やや大変）</option>
+                      <option value={40}>40（大変）</option>
+                      <option value={60}>60（激ムズ）</option>
                     </select>
                   </div>
                   <div>

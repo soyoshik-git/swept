@@ -19,13 +19,13 @@ type Props = {
 
 const DEFAULT_SPACES = ["リビング", "キッチン", "トイレ", "バスルーム", "洗面所", "玄関", "廊下", "ベランダ"];
 
-// 難易度5段階（DB保存値: 10/20/40/60/80）
+// 難易度5段階（DB保存値: 5/10/20/40/60）
 const DIFFICULTY_LEVELS = [
-  { value: 10, label: "楽",      emoji: "😊" },
-  { value: 20, label: "普通",    emoji: "🙂" },
-  { value: 40, label: "やや大変", emoji: "😤" },
-  { value: 60, label: "大変",    emoji: "😰" },
-  { value: 80, label: "激ムズ",  emoji: "🔥" },
+  { value:  5, label: "楽",      emoji: "😊" },
+  { value: 10, label: "普通",    emoji: "🙂" },
+  { value: 20, label: "やや大変", emoji: "😤" },
+  { value: 40, label: "大変",    emoji: "😰" },
+  { value: 60, label: "激ムズ",  emoji: "🔥" },
 ] as const;
 
 // 場所コンボボックス
@@ -140,7 +140,7 @@ export function TaskForm({
   const [name, setName] = useState(initialValues?.name ?? "");
   const [space, setSpace] = useState(initialValues?.space ?? "");
   const [memo, setMemo] = useState(initialValues?.memo ?? "");
-  const [basePoint, setBasePoint] = useState(initialValues?.base_point ?? 20);
+  const [basePoint, setBasePoint] = useState(initialValues?.base_point ?? 10);
   const [frequencyDays, setFrequencyDays] = useState(
     initialValues?.frequency_days ?? 7,
   );
