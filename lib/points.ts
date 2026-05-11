@@ -1,12 +1,10 @@
 /**
  * 放置ボーナス倍率を計算する
- * staleDays < frequencyDays * 2  → 1.0
- * staleDays >= frequencyDays * 2 → 1.0 + (bonusMax - 1.0) * 0.5
- * staleDays >= frequencyDays * 3 → bonusMax
+ * staleDays < frequencyDays → 1.0
+ * staleDays >= frequencyDays → bonusMax（頻度を超えた瞬間にフルボーナス、それ以降変わらず）
  */
 export function calcStaleMultiplier(staleDays: number, frequencyDays: number, bonusMax = 2.0): number {
-  if (staleDays >= frequencyDays * 3) return bonusMax;
-  if (staleDays >= frequencyDays * 2) return Math.round((1.0 + (bonusMax - 1.0) * 0.5) * 10) / 10;
+  if (staleDays >= frequencyDays) return bonusMax;
   return 1.0;
 }
 

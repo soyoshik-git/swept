@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { AlertTriangle, Flame, Sparkles, Check, RotateCcw, Clock } from "lucide-react";
+import { AlertTriangle, Sparkles, Check, RotateCcw, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { completeTask, skipTask } from "@/actions/completions";
@@ -21,8 +21,7 @@ type NeglectedTask = {
 
 function getBonusLevel(staleDays: number, frequencyDays: number, bonusMax: number) {
   const multiplier = calcStaleMultiplier(staleDays, frequencyDays, bonusMax);
-  if (multiplier >= bonusMax) return { label: "激熱", color: "bg-red-500 text-white", icon: Flame };
-  if (multiplier > 1.0) return { label: "高ボーナス", color: "bg-orange-500 text-white", icon: Sparkles };
+  if (multiplier > 1.0) return { label: "ボーナス", color: "bg-amber-400 text-amber-900", icon: Sparkles };
   return { label: "放置中", color: "bg-slate-200 text-slate-600", icon: Clock };
 }
 
