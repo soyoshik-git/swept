@@ -11,8 +11,8 @@ export function getStaleBadgeVariant(
   staleDays: number,
   frequencyDays: number,
 ): "red" | "yellow" | "green" {
-  if (staleDays >= frequencyDays * 2) return "red";
-  if (staleDays >= frequencyDays) return "yellow";
+  if (staleDays >= frequencyDays) return "red";
+  if (staleDays >= Math.ceil(frequencyDays * 0.7)) return "yellow";
   return "green";
 }
 

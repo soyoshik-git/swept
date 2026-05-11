@@ -13,35 +13,27 @@ describe("calcStaleMultiplier", () => {
     expect(calcStaleMultiplier(6, 7)).toBe(1.0);
   });
 
-  it("放置日数が推奨頻度以上2倍未満なら1.0", () => {
-    expect(calcStaleMultiplier(7, 7)).toBe(1.0);
-    expect(calcStaleMultiplier(13, 7)).toBe(1.0);
-  });
-
-  it("放置日数が推奨頻度の2倍以上3倍未満なら1.5（デフォルトmax=2.0）", () => {
-    expect(calcStaleMultiplier(14, 7)).toBe(1.5);
-    expect(calcStaleMultiplier(20, 7)).toBe(1.5);
-  });
-
-  it("放置日数が推奨頻度の3倍以上なら2.0（デフォルトmax=2.0）", () => {
-    expect(calcStaleMultiplier(21, 7)).toBe(2.0);
+  it("放置日数が推奨頻度以上ならbonusMax（デフォルト2.0）", () => {
+    expect(calcStaleMultiplier(7, 7)).toBe(2.0);
+    expect(calcStaleMultiplier(14, 7)).toBe(2.0);
     expect(calcStaleMultiplier(100, 7)).toBe(2.0);
   });
 
   it("推奨頻度が1日の場合", () => {
     expect(calcStaleMultiplier(0, 1)).toBe(1.0);
-    expect(calcStaleMultiplier(1, 1)).toBe(1.0);
-    expect(calcStaleMultiplier(2, 1)).toBe(1.5);
+    expect(calcStaleMultiplier(1, 1)).toBe(2.0);
     expect(calcStaleMultiplier(3, 1)).toBe(2.0);
   });
 
   it("bonusMax=1.5の場合", () => {
-    expect(calcStaleMultiplier(14, 7, 1.5)).toBe(1.3);
+    expect(calcStaleMultiplier(6, 7, 1.5)).toBe(1.0);
+    expect(calcStaleMultiplier(7, 7, 1.5)).toBe(1.5);
     expect(calcStaleMultiplier(21, 7, 1.5)).toBe(1.5);
   });
 
   it("bonusMax=3.0の場合", () => {
-    expect(calcStaleMultiplier(14, 7, 3.0)).toBe(2.0);
+    expect(calcStaleMultiplier(6, 7, 3.0)).toBe(1.0);
+    expect(calcStaleMultiplier(7, 7, 3.0)).toBe(3.0);
     expect(calcStaleMultiplier(21, 7, 3.0)).toBe(3.0);
   });
 });
@@ -51,11 +43,11 @@ describe("calcFinalPoint", () => {
     expect(calcFinalPoint(100, 3, 7, 0, 4)).toBe(100);
   });
 
-  it("放置ボーナス1.5倍が適用される", () => {
-    expect(calcFinalPoint(100, 14, 7, 0, 4)).toBe(150);
+  it("頻度ちょうどでフルボーナス（2.0倍）が適用される", () => {
+    expect(calcFinalPoint(100, 7, 7, 0, 4)).toBe(200);
   });
 
-  it("放置ボーナス2.0倍が適用される", () => {
+  it("頻度を超えてもボーナスは変わらない（2.0倍）", () => {
     expect(calcFinalPoint(100, 21, 7, 0, 4)).toBe(200);
   });
 
@@ -74,8 +66,8 @@ describe("calcFinalPoint", () => {
   });
 
   it("放置ボーナスとNG減算の組み合わせ", () => {
-    // 100 * 1.5 * (1 - 1/4) = 112.5 → floor → 112
-    expect(calcFinalPoint(100, 14, 7, 1, 4)).toBe(112);
+    // 100 * 2.0 * (1 - 1/4) = 150
+    expect(calcFinalPoint(100, 7, 7, 1, 4)).toBe(150);
   });
 
   it("端数はfloorで切り捨てる", () => {
