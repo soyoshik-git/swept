@@ -3,13 +3,14 @@
 import { useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil } from "lucide-react";
 import { completeTask } from "@/actions/completions";
 import { getStaleBadgeVariant, formatStaleDays } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { overlay, slideUp, sheetSpring, softSpring, fastFade } from "@/lib/animate";
 import { displayPt } from "@/lib/utils";
 import { TaskMemoButton } from "@/components/tasks/TaskMemoButton";
+import { FreeTaskModal } from "@/components/tasks/FreeTaskModal";
 
 type Task = {
   id: string;
@@ -21,25 +22,15 @@ type Task = {
   base_point: number;
 };
 
-type FreeTask = {
-  id: string;
-  name: string;
-  space: string | null;
-  base_point: number;
-};
-
-export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[]; freeTasks?: FreeTask[] }) {
+export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [confirmTask, setConfirmTask] = useState<Task | FreeTask | null>(null);
+  const [confirmTask, setConfirmTask] = useState<Task | null>(null);
+  const [freeTaskOpen, setFreeTaskOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [justDone, setJustDone] = useState(false);
 
   if (pathname.startsWith("/settings")) return null;
-
-  function handleSelect(task: Task | FreeTask) {
-    setConfirmTask(task);
-  }
 
   function handleConfirm() {
     if (!confirmTask) return;
@@ -55,7 +46,6 @@ export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[
   const showSheet = open && !confirmTask;
   const showConfirm = !!confirmTask;
 
-  // スペースでグループ化（スペースなしは「その他」へ）
   const OTHER_KEY = "__other__";
   const grouped = new Map<string, Task[]>();
   for (const task of tasks) {
@@ -71,7 +61,6 @@ export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[
 
   return (
     <>
-      {/* フローティングボタン */}
       <motion.button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-white shadow-lg shadow-violet-500/30"
@@ -109,7 +98,6 @@ export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[
               exit="exit"
               transition={sheetSpring}
             >
-              {/* ハンドル */}
               <div className="flex justify-center pt-2.5 pb-1">
                 <div className="w-9 h-1 bg-gray-200 rounded-full" />
               </div>
@@ -123,40 +111,10 @@ export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[
                 </button>
               </div>
               <div className="overflow-y-auto">
-                {tasks.length === 0 && freeTasks.length === 0 && (
+                {tasks.length === 0 && (
                   <p className="px-4 py-6 text-center text-sm text-gray-400">
                     アクティブなタスクがありません
                   </p>
-                )}
-                {freeTasks.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 bg-violet-50 border-b border-gray-100">
-                      <span className="text-xs font-semibold text-violet-500 uppercase tracking-wide">フリータスク</span>
-                    </div>
-                    <ul className="divide-y divide-gray-100">
-                      {freeTasks.map((task, i) => (
-                        <motion.li
-                          key={task.id}
-                          initial={{ opacity: 0, x: -8 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.04, ...softSpring }}
-                        >
-                          <button
-                            onClick={() => handleSelect(task)}
-                            className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
-                          >
-                            <div className="text-left flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900">{task.name}</p>
-                              {task.space && (
-                                <p className="text-xs text-gray-400">{task.space}</p>
-                              )}
-                            </div>
-                            <span className="text-xs font-bold text-primary shrink-0">+{displayPt(task.base_point)}pt</span>
-                          </button>
-                        </motion.li>
-                      ))}
-                    </ul>
-                  </div>
                 )}
                 {spaceOrder.map((spaceKey) => {
                   const group = grouped.get(spaceKey)!;
@@ -184,7 +142,7 @@ export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[
                               transition={{ delay: (itemIndex + i) * 0.04, ...softSpring }}
                             >
                               <button
-                                onClick={() => handleSelect(task)}
+                                onClick={() => setConfirmTask(task)}
                                 className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
                               >
                                 <div className="text-left flex-1 min-w-0 flex items-center gap-1.5">
@@ -205,6 +163,28 @@ export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[
                     </div>
                   );
                 })}
+
+                {/* フリータスク */}
+                <div>
+                  <div className="px-4 py-2 bg-violet-50 border-b border-gray-100 border-t border-t-gray-100">
+                    <span className="text-xs font-semibold text-violet-500 uppercase tracking-wide">フリータスク</span>
+                  </div>
+                  <button
+                    onClick={() => { setOpen(false); setFreeTaskOpen(true); }}
+                    className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 text-left">
+                      <Pencil className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">その他</p>
+                        <p className="text-xs text-gray-400">フリータスク・10〜40pt</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-primary font-medium border border-primary/30 rounded-full px-2.5 py-0.5 shrink-0">
+                      完了する
+                    </span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -235,8 +215,6 @@ export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[
               <div className="flex justify-center mb-5">
                 <div className="w-9 h-1 bg-gray-200 rounded-full" />
               </div>
-
-              {/* チェックアイコン */}
               <motion.div
                 className="flex justify-center mb-3"
                 initial={{ scale: 0, rotate: -20 }}
@@ -247,7 +225,6 @@ export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[
                   🧹
                 </div>
               </motion.div>
-
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -269,7 +246,6 @@ export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[
                   +{displayPt(confirmTask.base_point)}pt
                 </motion.p>
               </motion.div>
-
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmTask(null)}
@@ -291,6 +267,11 @@ export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[
           </div>
         )}
       </AnimatePresence>
+
+      {/* フリータスクモーダル */}
+      {freeTaskOpen && (
+        <FreeTaskModal onClose={() => { setFreeTaskOpen(false); setJustDone(true); setTimeout(() => setJustDone(false), 800); }} />
+      )}
     </>
   );
 }
