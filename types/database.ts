@@ -107,7 +107,6 @@ export type CompletionWithRelations = Completion & {
 export type DashboardData = {
   monthlyStats: Stats[];
   tasks: (Task & { last_completed_at: string | null; stale_days: number })[];
-  freeTasks: Pick<Task, "id" | "name" | "space" | "base_point">[];
   recentCompletions: CompletionWithRelations[];
   completionCount: number;
   myTotalPoint: number;
