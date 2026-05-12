@@ -34,6 +34,7 @@ export default async function AppLayout({
   const tasks = (data?.tasks ?? []).filter(
     (t) => !t.is_fixed_assign || t.assigned_user_id === user?.id
   );
+  const freeTasks = data?.freeTasks ?? [];
 
   const initials = userName.charAt(0) || "?";
 
@@ -79,7 +80,7 @@ export default async function AppLayout({
 
       <main className="mx-auto max-w-lg px-4 py-4 pb-24">{children}</main>
 
-      <FloatingCompleteButton tasks={tasks} />
+      <FloatingCompleteButton tasks={tasks} freeTasks={freeTasks} />
     </div>
   );
 }

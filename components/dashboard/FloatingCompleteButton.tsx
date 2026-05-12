@@ -21,16 +21,23 @@ type Task = {
   base_point: number;
 };
 
-export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
+type FreeTask = {
+  id: string;
+  name: string;
+  space: string | null;
+  base_point: number;
+};
+
+export function FloatingCompleteButton({ tasks, freeTasks = [] }: { tasks: Task[]; freeTasks?: FreeTask[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [confirmTask, setConfirmTask] = useState<Task | null>(null);
+  const [confirmTask, setConfirmTask] = useState<Task | FreeTask | null>(null);
   const [isPending, startTransition] = useTransition();
   const [justDone, setJustDone] = useState(false);
 
   if (pathname.startsWith("/settings")) return null;
 
-  function handleSelect(task: Task) {
+  function handleSelect(task: Task | FreeTask) {
     setConfirmTask(task);
   }
 
@@ -116,10 +123,40 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
                 </button>
               </div>
               <div className="overflow-y-auto">
-                {tasks.length === 0 && (
+                {tasks.length === 0 && freeTasks.length === 0 && (
                   <p className="px-4 py-6 text-center text-sm text-gray-400">
                     アクティブなタスクがありません
                   </p>
+                )}
+                {freeTasks.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 bg-violet-50 border-b border-gray-100">
+                      <span className="text-xs font-semibold text-violet-500 uppercase tracking-wide">フリータスク</span>
+                    </div>
+                    <ul className="divide-y divide-gray-100">
+                      {freeTasks.map((task, i) => (
+                        <motion.li
+                          key={task.id}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.04, ...softSpring }}
+                        >
+                          <button
+                            onClick={() => handleSelect(task)}
+                            className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                          >
+                            <div className="text-left flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900">{task.name}</p>
+                              {task.space && (
+                                <p className="text-xs text-gray-400">{task.space}</p>
+                              )}
+                            </div>
+                            <span className="text-xs font-bold text-primary shrink-0">+{displayPt(task.base_point)}pt</span>
+                          </button>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
                 {spaceOrder.map((spaceKey) => {
                   const group = grouped.get(spaceKey)!;

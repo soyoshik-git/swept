@@ -116,7 +116,7 @@ export async function getAllCompletions(page = 0, pageSize = 50) {
     .from("completions")
     .select("*, task:tasks(*), user:users(*), ng_votes(id, user_id, reason)")
     .in("task_id", ids)
-    .not("notes", "eq", "__skip__")
+    .or("notes.is.null,notes.neq.__skip__")
     .order("completed_at", { ascending: false })
     .range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -269,6 +269,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     return {
       monthlyStats: [],
       tasks: [],
+      freeTasks: [],
       recentCompletions: [],
       completionCount: 0,
       myTotalPoint: 0,
@@ -292,6 +293,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     { count: completionCount },
     { count: myPenaltyCount },
     { count: memberCount },
+    { data: freeTasksRaw },
   ] = await Promise.all([
     supabase
       .from("monthly_stats")
@@ -306,6 +308,12 @@ export async function getDashboardData(): Promise<DashboardData> {
       .eq("room_id", member.room_id)
       .eq("is_active", true)
       .eq("is_free_task", false),
+    supabase
+      .from("tasks")
+      .select("id, name, space, base_point")
+      .eq("room_id", member.room_id)
+      .eq("is_active", true)
+      .eq("is_free_task", true),
     supabase
       .from("completions")
       .select("id", { count: "exact", head: true })
@@ -381,6 +389,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   return {
     monthlyStats: statsWithCount as Stats[],
     tasks,
+    freeTasks: (freeTasksRaw ?? []) as Pick<import("@/types/database").Task, "id" | "name" | "space" | "base_point">[],
     recentCompletions,
     completionCount: completionCount ?? 0,
     myTotalPoint,
