@@ -46,7 +46,6 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
   const showSheet = open && !confirmTask;
   const showConfirm = !!confirmTask;
 
-  // スペースでグループ化（スペースなしは「その他」へ）
   const OTHER_KEY = "__other__";
   const grouped = new Map<string, Task[]>();
   for (const task of tasks) {
@@ -62,7 +61,6 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
 
   return (
     <>
-      {/* フローティングボタン */}
       <motion.button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-white shadow-lg shadow-violet-500/30"
@@ -100,7 +98,6 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
               exit="exit"
               transition={sheetSpring}
             >
-              {/* ハンドル */}
               <div className="flex justify-center pt-2.5 pb-1">
                 <div className="w-9 h-1 bg-gray-200 rounded-full" />
               </div>
@@ -218,8 +215,6 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
               <div className="flex justify-center mb-5">
                 <div className="w-9 h-1 bg-gray-200 rounded-full" />
               </div>
-
-              {/* チェックアイコン */}
               <motion.div
                 className="flex justify-center mb-3"
                 initial={{ scale: 0, rotate: -20 }}
@@ -230,7 +225,6 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
                   🧹
                 </div>
               </motion.div>
-
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -252,7 +246,6 @@ export function FloatingCompleteButton({ tasks }: { tasks: Task[] }) {
                   +{displayPt(confirmTask.base_point)}pt
                 </motion.p>
               </motion.div>
-
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmTask(null)}
