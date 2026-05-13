@@ -333,15 +333,17 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const nonFreeTasks = (tasksRaw ?? []).filter((t) => !(t as unknown as { is_free_task?: boolean }).is_free_task);
   const taskIds = nonFreeTasks.map((t) => t.id);
+  const freeTaskIds = (freeTasksRaw ?? []).map((t) => t.id);
+  const allTaskIds = [...taskIds, ...freeTaskIds];
 
   // ─── Step2: 並列取得（最終完了マップ・最近の完了・今月の完了） ───
   const [lastCompletionMap, recentCompletionsData, monthlyCompletionsData] = await Promise.all([
     fetchLastCompletionMap(supabase, taskIds),  // N+1 → 1クエリ
-    taskIds.length
+    allTaskIds.length
       ? supabase
           .from("completions")
           .select("*, task:tasks(*), user:users(*), ng_votes(id, user_id, reason)")
-          .in("task_id", taskIds)
+          .in("task_id", allTaskIds)
           .order("completed_at", { ascending: false })
           .limit(10)
       : Promise.resolve({ data: [] }),

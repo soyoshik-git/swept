@@ -146,7 +146,7 @@ export async function completeFreeTask(data: {
 
   const { data: member } = await supabase
     .from("users")
-    .select("id, name, room_id")
+    .select("id, name, room_id, room:rooms(line_group_id)")
     .eq("id", authUser.id)
     .single();
   if (!member) throw new Error("User not found");
@@ -207,6 +207,13 @@ export async function completeFreeTask(data: {
       penalty_pt: 0,
       net_point: point,
     });
+  }
+
+  // LINE通知（失敗してもエラーにしない）
+  const lineGroupId = (member.room as unknown as { line_group_id?: string } | null)?.line_group_id;
+  if (lineGroupId) {
+    const text = buildCompletionMessage(member.name, name.trim(), point);
+    pushMessage(lineGroupId, text).catch(console.error);
   }
 
   revalidatePath("/");
